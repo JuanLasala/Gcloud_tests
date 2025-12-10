@@ -1,0 +1,27 @@
+# Ignorar datasets pesados
+train/
+test/
+val/
+vit-afinacion/
+# Ignorar modelos entrenados
+models/
+*.pt
+*.pth
+*.h5
+
+# Ignorar caches
+*.cache
+__pycache__/
+*.ipynb_checkpoints/
+
+# Ignorar resultados
+resultados_efficientnet/
+runs/
+
+# Ignorar logs grandes
+*.log
+
+# Ignorar entornos locales
+.env
+venv/
+vit_env/
