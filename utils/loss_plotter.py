@@ -3,19 +3,23 @@ import os
 
 def plot_learning_curves(log_history, output_dir):
     train_loss = []
-    eval_loss = []
     steps = []
+
+    eval_loss = []
+    eval_epochs = []
 
     for entry in log_history:
         if "loss" in entry and "epoch" in entry:
             train_loss.append(entry["loss"])
             steps.append(entry["epoch"])
-        if "eval_loss" in entry:
+        if "eval_loss" in entry and "epoch" in entry:
             eval_loss.append(entry["eval_loss"])
+            eval_epochs.append(entry["epoch"])
 
     plt.figure()
     plt.plot(steps[:len(train_loss)], train_loss, label="Train Loss")
-    plt.plot(steps[:len(eval_loss)], eval_loss, label="Eval Loss")
+    if eval_loss:
+        plt.plot(eval_epochs, eval_loss, label="Eval Loss", color='orange', linewidth=2, marker='o')
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()

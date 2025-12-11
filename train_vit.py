@@ -29,8 +29,16 @@ ds = load_imagefolder(DATA_PATH)
 # 2. Crear modelo ViT + processor
 # ==========================================
 labels = ds["train"].features["label"].names
-id2label = {i: c for i, c in enumerate(labels)}
-label2id = {c: i for i, c in enumerate(labels)}
+print("labels (dataset order):", labels)
+
+id2label = {i: label for i, label in enumerate(labels)}
+label2id = {label: i for i, label in enumerate(labels)}
+
+print("id2label:", id2label)
+print("label2id:", label2id)
+
+fire_index = labels.index("Fire")
+no_fire_index = labels.index("No_Fire")
 
 model, processor = build_vit(
     "google/vit-base-patch16-224-in21k",
