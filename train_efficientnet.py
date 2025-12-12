@@ -104,12 +104,11 @@ effnet_norm = transforms.Compose([
 def train_transform_effnet(batch):
     images = [img.convert("RGB") for img in batch["image"]]
     images = [train_augmentations(img) for img in images]   # SOLO PIL transforms
-    return {"image": images, "label": batch["label"]}
+    return {"image": images, "label": batch["label"], "path": batch["path"]}
 
 def eval_transform_effnet(batch):
     images = [img.convert("RGB") for img in batch["image"]]
-    return {"image": images, "label": batch["label"]}
-
+    return {"image": images, "label": batch["label"], "path": batch["path"]}
 ds = {
     "train": ds["train"].with_transform(train_transform_effnet),
     "val": ds["val"].with_transform(eval_transform_effnet),
@@ -186,11 +185,11 @@ plot_confusion(y_true, y_pred, labels, RUN_DIR)
 print('confusion done')
 save_classification_report(y_true, y_pred, labels, RUN_DIR)
 print('report done')
-fps = inspect_fp(model, processor, ds["val"], labels)
+"""fps = inspect_fp(model, processor, ds["val"], labels)
 print("FOUND FP:", len(fps))
 for r in fps[:10]:
     print(r)
-
+"""
 plot_learning_curves(trainer.state.log_history, RUN_DIR)
 print('learning curves done')
 print("Entrenamiento completado.")

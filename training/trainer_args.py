@@ -1,6 +1,6 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-6, epochs=5):
+def get_training_args(output_dir, lr=1e-4, epochs=20): #cambiar lr a 1e-4 para efficientnet
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=16,

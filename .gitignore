@@ -16,6 +16,7 @@ __pycache__/
 
 # Ignorar resultados
 resultados_efficientnet/
+resultados_vit/
 runs/
 
 # Ignorar logs grandes
