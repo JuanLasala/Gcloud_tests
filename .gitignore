@@ -3,6 +3,8 @@ train/
 test/
 val/
 vit-afinacion/
+external images/
+
 # Ignorar modelos entrenados
 models/
 *.pt
