@@ -35,9 +35,9 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
             image_path = item["path"]
             image = Image.open(image_path).convert("RGB")
         else:
-            # CASE 2: HuggingFace load_imagefolder dataset (no original path)
+            # CASE 2: HuggingFace load_imagefolder dataset (no original path
             image = item["image"].convert("RGB")
-            image_path = None  # No existe ruta original
+            image_path = None  
 
         true_label = int(item["label"])
 
