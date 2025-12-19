@@ -20,35 +20,32 @@ import torch.nn.functional as F
 
 
 # ==========================================
-# 1. Cargar dataset
+# CARGAR DATASET
 # ==========================================
 DATA_PATH = "/home/jlasala/ViT tests"
 ds = load_imagefolder(DATA_PATH)
 
 # ==========================================
-# 2. Crear modelo ViT + processor
+# CREAR MODELO VIT + PROCESSOR
 # ==========================================
-labels = ds["train"].features["label"].names
+labels = ds["train"].features["label"].names # nombres de las clases en el orden del dataset
 print("labels (dataset order):", labels)
 
-id2label = {i: label for i, label in enumerate(labels)}
-label2id = {label: i for i, label in enumerate(labels)}
-
-print("id2label:", id2label)
-print("label2id:", label2id)
+id2label = {i: label for i, label in enumerate(labels)} # Mapeo ID a label ({0: 'Fire', 1: 'No_Fire'})
+label2id = {label: i for i, label in enumerate(labels)} # Mapeo LABEL A ID ({"Fire": 0, "No_Fire": 1})
 
 fire_index = labels.index("Fire")
 no_fire_index = labels.index("No_Fire")
 
 model, processor = build_vit(
     "google/vit-base-patch16-224-in21k",
-    num_labels=len(labels),
+    num_labels=len(labels), # número de clases
     id2label=id2label,
     label2id=label2id
 )
 
 # ==========================================
-# 3. Transforms (se usan con .with_transform)
+# TRANSFORMS (SE USAN CON .WITH_TRANSFORM)
 # ==========================================
 def train_transform(batch):
     images = [train_augmentations(img.convert("RGB")) for img in batch["image"]]
@@ -69,7 +66,7 @@ ds_transf = {
 }
 
 # ==========================================
-# 4. Trainer
+# TRAINER
 # ==========================================
 
 
@@ -89,19 +86,19 @@ trainer = Trainer(
 )
 
 # ==========================================
-# 5. Entrenar
+# ENTRENAR
 # ==========================================
 train_results = trainer.train()
 trainer.save_model()
 
 # ==========================================
-# 6. Evaluar
+# EVALUAR
 # ==========================================
 metrics = trainer.evaluate(ds_transf["val"])
 trainer.save_metrics("eval", metrics)
 
 # ==========================================
-# 7. Guardar imágenes mal clasificadas
+# GUARDAR IMÁGENES MAL CLASIFICADAS
 # ==========================================
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
     model, processor, ds["val"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
@@ -112,7 +109,7 @@ create_gradcam_for_misclassified(
 )
 
 # ==========================================
-# 8. Plots
+# PLOTS
 # ==========================================
 preds = trainer.predict(ds_transf["val"])
 y_pred = preds.predictions.argmax(axis=1)

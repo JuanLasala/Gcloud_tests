@@ -10,8 +10,9 @@ def plot_confusion(y_true, y_pred, class_names, output_dir):
     plt.title("Confusion Matrix")
     plt.savefig(os.path.join(output_dir, "confusion_matrix.png"))
     plt.close()
-
+    # Save the confusion matrix as a text file
 def save_classification_report(y_true, y_pred, class_names, output_dir):
     report = classification_report(y_true, y_pred, target_names=class_names)
     with open(os.path.join(output_dir, "classification_report.txt"), "w") as f:
         f.write(report)
+    # Save the classification report as a text file

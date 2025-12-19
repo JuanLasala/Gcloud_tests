@@ -7,7 +7,7 @@ def plot_learning_curves(log_history, output_dir):
 
     eval_loss = []
     eval_epochs = []
-
+    # Extract train and eval loss from log_history
     for entry in log_history:
         if "loss" in entry and "epoch" in entry:
             train_loss.append(entry["loss"])
@@ -15,7 +15,7 @@ def plot_learning_curves(log_history, output_dir):
         if "eval_loss" in entry and "epoch" in entry:
             eval_loss.append(entry["eval_loss"])
             eval_epochs.append(entry["epoch"])
-
+    # Plot the learning curves
     plt.figure()
     plt.plot(steps[:len(train_loss)], train_loss, label="Train Loss")
     if eval_loss:

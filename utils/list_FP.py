@@ -3,7 +3,7 @@ import numpy as np
 
 def inspect_fp(model, processor, dataset, fire_index, no_fire_index, device='cuda'):
     """
-    Lista Falsos Positivos reales:
+    List real False Positives:
     No_Fire (true) → Fire (pred)
     """
 
@@ -38,7 +38,7 @@ def inspect_fp(model, processor, dataset, fire_index, no_fire_index, device='cud
                 "probs": probs.tolist()
             })
 
-    # orden descendente por confianza
+    # descending confidence
     results.sort(key=lambda x: x["prob_pred"], reverse=True)
 
     return results

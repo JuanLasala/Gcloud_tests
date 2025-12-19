@@ -5,7 +5,7 @@ class EfficientNetCollator:
         self.processor = processor
 
     def __call__(self, batch):
-        # batch es una lista de dicts {"image": PIL, "label": int}
+        # batch is a list of dicts {"image": PIL, "label": int}
         images = [example["image"] for example in batch]
         labels = torch.tensor([example["label"] for example in batch], dtype=torch.long)
 

@@ -7,17 +7,16 @@ fn_paths = []
 
 def save_misclassified_images(model, processor, dataset, output_dir, fire_index, no_fire_index): 
     """
-    Guarda imágenes mal clasificadas (FP y FN) en carpetas separadas.
-    Funciona tanto si dataset[i] contiene 'path' como si no.
+    Save misclassified images (FP and FN) in separate folders.
     """
 
-    # Carpetas de salida
+    # Output directories
     fp_dir = os.path.join(output_dir, "false_positives")
     fn_dir = os.path.join(output_dir, "false_negatives")
     os.makedirs(fp_dir, exist_ok=True)
     os.makedirs(fn_dir, exist_ok=True)
 
-    print("\n>>> Buscando errores de clasificación...\n")
+    print("\n>>> Looking for misclassified images...\n")
 
     model.eval()
     device = next(model.parameters()).device
@@ -29,21 +28,21 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
         item = dataset[i]
 
         # --------------------------
-        # 1) Obtener la imagen
+        # 1) Obtain image
         # --------------------------
         if "path" in item:  
-            # CASO 1: ImageFolder de torchvision
+            # CASE 1: torchvision ImageFolder
             image_path = item["path"]
             image = Image.open(image_path).convert("RGB")
         else:
-            # CASO 2: Dataset HuggingFace load_imagefolder (tu caso)
+            # CASE 2: HuggingFace load_imagefolder dataset (no original path)
             image = item["image"].convert("RGB")
             image_path = None  # No existe ruta original
 
         true_label = int(item["label"])
 
         # --------------------------
-        # 2) Procesar imagen
+        # 2) Process image
         # --------------------------
         inputs = processor(images=image, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
@@ -52,7 +51,7 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
             outputs = model(**inputs)
             pred_label = outputs.logits.argmax(dim=-1).item()
         # --------------------------
-        # EXTRA: extraer país y número desde el nombre original
+        # EXTRA: extract country and id number from original filename
         # --------------------------
         pais = "unknown"
         num = "unknown"
@@ -65,7 +64,7 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
                 num = parts[1]
 
         # --------------------------
-        # 3) Chequear error
+        # 3) Check error
         # --------------------------
         if pred_label != true_label:
             # filename final
@@ -88,9 +87,9 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
                 fn_paths.append(save_path)
                 fn_count += 1
 
-    print(f"✔ Errores encontrados: {fp_count + fn_count}")
-    print(f"   - Falsos Positivos: {fp_count}")
-    print(f"   - Falsos Negativos: {fn_count}")
-    print(f"\nGuardados en:\n{output_dir}\n")
+    print(f"✔ Errors found: {fp_count + fn_count}")
+    print(f"   - False Positives: {fp_count}")
+    print(f"   - False Negatives: {fn_count}")
+    print(f"\nSaved in:\n{output_dir}\n")
 
     return fp_count, fn_count, fp_paths, fn_paths
