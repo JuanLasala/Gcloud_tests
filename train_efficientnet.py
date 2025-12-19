@@ -24,8 +24,8 @@ from utils.list_FP import inspect_fp
 # CONFIGURACIÓN GENERAL
 # ---------------------------------------------------------------------
 
-MODEL_NAME = "google/efficientnet-b4" 
-RESULTS_BASE = "./resultados_efficientnet"
+MODEL_NAME = "google/efficientnet-b4" #modelo a elegir (en este caso EfficientNet-b4)
+RESULTS_BASE = "./resultados_efficientnet" #directorio para guardar resultados
 
 RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 RUN_DIR = os.path.join(RESULTS_BASE, f"efficientnet_run_{RUN_ID}")
@@ -42,9 +42,10 @@ print(f"Guardando resultados en: {RUN_DIR}\n")
 DATA_PATH = "/home/jlasala/ViT tests"
 
 ds = load_imagefolder(DATA_PATH)
+
 """
 # =================================================================
-# --- [1] PRUEBA SUPER RÁPIDA: REDUCCIÓN DE DATASET ---
+# PRUEBA RÁPIDA CON DATASET REDUCIDO
 # =================================================================
 NUM_SAMPLES = 100
 NUM_VAL_SAMPLES = 20
@@ -58,11 +59,11 @@ ds["val"] = ds["val"].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
 # ---------------------------------------------------------------------
 # MAPEOS DE CLASES
 # ---------------------------------------------------------------------
-labels = ds["train"].features["label"].names
+labels = ds["train"].features["label"].names # nombres de las clases en el orden del dataset
 print("labels (dataset order):", labels)
 
-id2label = {i: label for i, label in enumerate(labels)}
-label2id = {label: i for i, label in enumerate(labels)}
+id2label = {i: label for i, label in enumerate(labels)} # mapeo id a label ({0: 'Fire', 1: 'No_Fire'})
+label2id = {label: i for i, label in enumerate(labels)} # mapeo label a id ({"Fire": 0, "No_Fire": 1})
 
 print("id2label:", id2label)
 print("label2id:", label2id)
@@ -76,21 +77,21 @@ no_fire_index = labels.index("No_Fire")
 print("\nCargando modelo y processor...")
 model, processor = load_hf_model(
     MODEL_NAME,
-    num_labels=len(id2label),
+    num_labels=len(id2label), # número de clases
     id2label=id2label,
-    label2id=label2id
+    label2id=label2id 
 )
 
 
-sample = ds["val"][0]["image"].convert("RGB")
-inputs = processor(images=sample, return_tensors="pt")
-print("Processor output shape:", inputs["pixel_values"].shape)
+sample = ds["val"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
+inputs = processor(images=sample, return_tensors="pt") # procesamiento de la imagen por el processor
+print("Processor output shape:", inputs["pixel_values"].shape) 
 
 # ---------------------------------------------------------------------
 # COLLATOR (procesamiento por batch)
 # ---------------------------------------------------------------------
 print("Creando data collator...")
-collator = EfficientNetCollator(processor)
+collator = EfficientNetCollator(processor) #
 
 # -------------------------------------------------------------------------
 #TRANSFORMS 
@@ -120,11 +121,6 @@ ds = {
 print("Definiendo training arguments...")
 training_args = get_training_args(
     output_dir=RUN_DIR
-    #,learning_rate=3e-6,
-    #num_train_epochs=20,
-    #per_device_train_batch_size=16,
-    #per_device_eval_batch_size=16,
-    #patience=5
 )
 
 # ---------------------------------------------------------------------
@@ -148,6 +144,7 @@ print("\n=== Iniciando entrenamiento ===")
 
 #PATH_TO_RESUME = "./resultados_efficientnet/efficientnet_run_2025-12-09_19-51-14"
 #train_output = trainer.train(resume_from_checkpoint=PATH_TO_RESUME)
+train_start = datetime.now()
 train_output = trainer.train()
 trainer.save_model(os.path.join(RUN_DIR, "best_model"))
 
@@ -180,7 +177,6 @@ create_gradcam_for_misclassified(
 preds = trainer.predict(ds["val"])
 y_pred = preds.predictions.argmax(axis=1)
 y_true = preds.label_ids
-print("Antes de plots")
 plot_confusion(y_true, y_pred, labels, RUN_DIR)
 print('confusion done')
 save_classification_report(y_true, y_pred, labels, RUN_DIR)
@@ -192,4 +188,9 @@ for r in fps[:10]:
 """
 plot_learning_curves(trainer.state.log_history, RUN_DIR)
 print('learning curves done')
-print("Entrenamiento completado.")
+training_end = datetime.now()
+training_duration = training_end - train_start
+total_seconds = int(training_duration.total_seconds())
+hrs, rem = divmod(total_seconds, 3600)
+mins, secs = divmod(rem, 60)
+print(f"Entrenamiento completado. Duración del entrenamiento: {hrs}h {mins}m {secs}s")
