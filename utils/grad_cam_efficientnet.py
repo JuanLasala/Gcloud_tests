@@ -4,6 +4,8 @@ import cv2
 import os
 from PIL import Image
 
+from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
+
 
 # =====================================================
 #Obtain last convolutional layer of EfficientNet for grad-CAM
@@ -34,8 +36,9 @@ def generate_efficientnet_gradcam(model, processor, image_path, output_path):
     model.eval()
     
     # ----- load image -----
-    img_pil = Image.open(image_path).convert("RGB")
-    inputs = processor(images=img_pil, return_tensors="pt")
+    tensor = load_multiband_tiff(image_path, target_channels=13)
+    img_pil = Image.fromarray(make_rgb_preview(tensor))
+    inputs = {"pixel_values": tensor.unsqueeze(0)}
 
     device = next(model.parameters()).device
     inputs = {k: v.to(device) for k, v in inputs.items()}

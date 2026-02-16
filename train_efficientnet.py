@@ -1,19 +1,18 @@
 import os
 import torch
 from datetime import datetime
-from datasets import load_dataset
-from transformers import TrainingArguments, Trainer
-from torchvision import transforms
-from collections import Counter
+from transformers import Trainer
 
 
 # --- módulos propios ---
 from models.model_loader import load_hf_model
 from data.dataset_loader import load_imagefolder
-from data.augmentations import train_augmentations
+from data.augmentations import train_augmentations_multiband, eval_augmentations_multiband
+from data.multiband_tiff import load_multiband_tiff
 from data.collators_efficientnet import EfficientNetCollator
 from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
+from utils.efficientnet_helpers import build_multiband_transforms, apply_effnet_transforms
 from utils.save_errors import save_misclassified_images
 from utils.grad_cam_efficientnet import create_gradcam_for_misclassified
 from utils.loss_plotter import plot_learning_curves
@@ -41,6 +40,7 @@ print(f"Guardando resultados en: {RUN_DIR}\n")
 # ---------------------------------------------------------------------
 
 DATA_PATH = "/home/jlasala/ViT tests"
+TARGET_CHANNELS = 13
 
 ds = load_imagefolder(DATA_PATH)
 
@@ -80,43 +80,31 @@ model, processor = load_hf_model(
     MODEL_NAME,
     num_labels=len(id2label), # número de clases
     id2label=id2label,
-    label2id=label2id 
+    label2id=label2id,
+    in_channels=TARGET_CHANNELS,
 )
 model = torch.compile(model)
 
-
-sample = ds["val"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
-inputs = processor(images=sample, return_tensors="pt") # procesamiento de la imagen por el processor
-print("Processor output shape:", inputs["pixel_values"].shape) 
+sample = load_multiband_tiff(ds["val"][0]["path"], target_channels=TARGET_CHANNELS)
+print("Sample multiband shape:", sample.shape)
 
 # ---------------------------------------------------------------------
 # COLLATOR (procesamiento por batch)
 # ---------------------------------------------------------------------
 print("Creando data collator...")
-collator = EfficientNetCollator(processor) #
+collator = EfficientNetCollator(processor=None)
 
 # -------------------------------------------------------------------------
 #TRANSFORMS 
 # -------------------------------------------------------------------------
 print("Definiendo transforms...")
-# normalización para efficientnet
-effnet_norm = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
-def train_transform_effnet(batch):
-    images = [img.convert("RGB") for img in batch["image"]]
-    images = [train_augmentations(img) for img in images]   # SOLO PIL transforms
-    return {"image": images, "label": batch["label"], "path": batch["path"]}
-
-def eval_transform_effnet(batch):
-    images = [img.convert("RGB") for img in batch["image"]]
-    return {"image": images, "label": batch["label"], "path": batch["path"]}
-ds = {
-    "train": ds["train"].with_transform(train_transform_effnet),
-    "val": ds["val"].with_transform(eval_transform_effnet),
-    "test": ds["test"].with_transform(eval_transform_effnet),
-}
+train_transform_effnet, eval_transform_effnet = build_multiband_transforms(
+    TARGET_CHANNELS,
+    train_augmentations_multiband,
+    eval_augmentations_multiband,
+    load_multiband_tiff,
+)
+ds = apply_effnet_transforms(ds, train_transform_effnet, eval_transform_effnet)
 # ---------------------------------------------------------------------
 # TRAINING ARGUMENTS
 # ---------------------------------------------------------------------

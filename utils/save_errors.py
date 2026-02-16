@@ -2,6 +2,8 @@ import os
 from PIL import Image
 import torch
 
+from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
+
 fp_paths = []
 fn_paths = []
 
@@ -30,21 +32,23 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
         # --------------------------
         # 1) Obtain image
         # --------------------------
-        if "path" in item:  
-            # CASE 1: torchvision ImageFolder
+        if "path" in item:
             image_path = item["path"]
-            image = Image.open(image_path).convert("RGB")
+            tensor = load_multiband_tiff(image_path, target_channels=13)
+            image = Image.fromarray(make_rgb_preview(tensor))
         else:
-            # CASE 2: HuggingFace load_imagefolder dataset (no original path
             image = item["image"].convert("RGB")
-            image_path = None  
+            image_path = None
 
         true_label = int(item["label"])
 
         # --------------------------
         # 2) Process image
         # --------------------------
-        inputs = processor(images=image, return_tensors="pt")
+        if image_path is not None:
+            inputs = {"pixel_values": tensor.unsqueeze(0)}
+        else:
+            inputs = processor(images=image, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         with torch.no_grad():

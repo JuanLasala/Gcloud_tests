@@ -6,3 +6,7 @@ evaluate
 scikit-learn
 matplotlib
 pillow
+tifffile
+numpy
+opencv-python
+statsmodels

@@ -5,7 +5,7 @@ def get_training_args(output_dir, lr=3e-5, epochs=5):
         output_dir=output_dir,
         per_device_train_batch_size=16,
         fp16=True,
-        eval_strategy="epoch",
+        eval_strategy="epoch", # val is being used
         save_strategy="epoch",
         save_total_limit=3,
         num_train_epochs=epochs,
@@ -16,6 +16,6 @@ def get_training_args(output_dir, lr=3e-5, epochs=5):
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
         greater_is_better=True,
-        dataloader_num_workers=4
+        dataloader_num_workers=4 # added in last commit
         #label_smoothing_factor=0.1,
     )
