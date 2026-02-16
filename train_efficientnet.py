@@ -24,7 +24,8 @@ from utils.list_FP import inspect_fp
 # CONFIGURACIÓN GENERAL
 # ---------------------------------------------------------------------
 
-MODEL_NAME = "google/efficientnet-b4" #modelo a elegir (en este caso EfficientNet-b4)
+#MODEL_NAME = "google/efficientnet-b4" #modelo a elegir (en este caso EfficientNet-b4)
+MODEL_NAME = "google/efficientnet-v2-s"
 RESULTS_BASE = "./resultados_efficientnet" #directorio para guardar resultados
 
 RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -81,6 +82,7 @@ model, processor = load_hf_model(
     id2label=id2label,
     label2id=label2id 
 )
+model = torch.compile(model)
 
 
 sample = ds["val"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
