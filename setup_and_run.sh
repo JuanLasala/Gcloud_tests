@@ -22,34 +22,47 @@ sudo apt update -y && sudo apt upgrade -y
 sudo apt install -y wget git unzip # Dependencias básicas
 
 # --------------------------------------------------------------------------
-# Bloque 2: Configuración del Entorno Conda (Optimizado para no reinstalar)
+# Bloque 2: Configuración del Entorno pyenv (Optimizado para no reinstalar)
 # --------------------------------------------------------------------------
 
-CONDA_PATH="$HOME/miniconda"
+PYENV_ROOT="$HOME/.pyenv"
 ENV_NAME="train-env"
+PYTHON_VERSION="3.11.8"
 
 echo "=========================="
-echo " 2) Instalando/Reinstalando Miniconda y Entorno"
+echo " 2) Instalando pyenv y entorno virtual"
 echo "=========================="
 
-# 2a. Reinstalar Miniconda si no existe (o si la instalación es vieja)
-if [ ! -d "$CONDA_PATH" ]; then
-    echo "Instalando Miniconda..."
-    cd /tmp
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    bash miniconda.sh -b -p $CONDA_PATH
-    rm miniconda.sh
+# 2a. Install dependencies (Ubuntu/Debian)
+sudo apt update
+sudo apt install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev curl git \
+    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+    libffi-dev liblzma-dev
+
+# 2b. Install pyenv if not present
+if [ ! -d "$PYENV_ROOT" ]; then
+    echo "Instalando pyenv..."
+    git clone https://github.com/pyenv/pyenv.git $PYENV_ROOT
 fi
 
-# 2b. Inicializar y Activar Conda (necesario en cada ejecución de script)
-eval "$($CONDA_PATH/bin/conda shell.bash hook)"
-conda activate $ENV_NAME || { 
-    echo "Creando entorno Conda nuevo: $ENV_NAME"
-    conda create -y -n $ENV_NAME python=3.11vsc
-    conda activate $ENV_NAME
-}
+# 2c. Initialize pyenv
+export PYENV_ROOT="$PYENV_ROOT"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
+# 2d. Install Python version if missing
+if ! pyenv versions --bare | grep -q "$PYTHON_VERSION"; then
+    pyenv install $PYTHON_VERSION
+fi
 
+# 2e. Create virtual environment if missing
+if ! pyenv virtualenvs --bare | grep -q "$ENV_NAME"; then
+    pyenv virtualenv $PYTHON_VERSION $ENV_NAME
+fi
+
+# 2f. Activate environment
+pyenv activate $ENV_NAME
 # --------------------------------------------------------------------------
 # Bloque 3: Instalación de Dependencias (Optimizado)
 # --------------------------------------------------------------------------
