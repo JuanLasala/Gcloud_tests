@@ -79,7 +79,7 @@ echo "=========================="
 
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
-gsutil -m rsync -r gs://training_data_v1_new/dataset/ .
+gsutil -m rsync -r gs://fire_model_dataset/ .
 
 echo "Dataset copiado a: $SCRIPT_DIR"
 

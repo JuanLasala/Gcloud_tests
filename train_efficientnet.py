@@ -18,6 +18,7 @@ from utils.grad_cam_efficientnet import create_gradcam_for_misclassified
 from utils.loss_plotter import plot_learning_curves
 from utils.plots import plot_confusion, save_classification_report
 from utils.list_FP import inspect_fp
+from utils.threshold_tuning import find_optimal_threshold, apply_threshold
 
 # ---------------------------------------------------------------------
 # CONFIGURACIÓN GENERAL
@@ -146,6 +147,28 @@ metrics = trainer.evaluate()
 print(metrics)
 
 # -------------------------------------------------------------------------
+# THRESHOLD TUNING (en val set)
+# -------------------------------------------------------------------------
+print("\n=== Sintonizando umbral (threshold) en validación ===")
+val_preds = trainer.predict(ds["val"])
+val_logits = val_preds.predictions
+val_labels = val_preds.label_ids
+
+optimal_threshold, threshold_metrics = find_optimal_threshold(
+    val_logits,
+    val_labels,
+    fire_index=fire_index,
+    metric="f1_weighted",
+    beta=2.0,  # Enfatizar recall (reducir FN) 2x más que precision
+)
+print(f"Umbral óptimo: {optimal_threshold:.4f}")
+print(f"  - Precisión: {threshold_metrics['precision']:.4f}")
+print(f"  - Recall: {threshold_metrics['recall']:.4f}")
+print(f"  - F1: {threshold_metrics['f1']:.4f}")
+print(f"  - TP: {threshold_metrics['true_positives']}, FP: {threshold_metrics['false_positives']}")
+print(f"  - FN: {threshold_metrics['false_negatives']}, TN: {threshold_metrics['true_negatives']}\n")
+
+# -------------------------------------------------------------------------
 # EVALUACIÓN
 # -------------------------------------------------------------------------
 trainer.save_metrics("eval", metrics)
@@ -164,12 +187,12 @@ create_gradcam_for_misclassified(
 # -------------------------------------------------------------------------
 # PLOTS
 # -------------------------------------------------------------------------
-preds = trainer.predict(ds["val"])
-y_pred = preds.predictions.argmax(axis=1)
-y_true = preds.label_ids
-plot_confusion(y_true, y_pred, labels, RUN_DIR)
+# Usar predicciones con umbral óptimo en lugar de argmax
+y_pred_threshold = apply_threshold(val_logits, fire_index, optimal_threshold)
+y_true = val_labels
+plot_confusion(y_true, y_pred_threshold, labels, RUN_DIR)
 print('confusion done')
-save_classification_report(y_true, y_pred, labels, RUN_DIR)
+save_classification_report(y_true, y_pred_threshold, labels, RUN_DIR)
 print('report done')
 """fps = inspect_fp(model, processor, ds["val"], labels)
 print("FOUND FP:", len(fps))
@@ -178,6 +201,20 @@ for r in fps[:10]:
 """
 plot_learning_curves(trainer.state.log_history, RUN_DIR)
 print('learning curves done')
+
+# -------------------------------------------------------------------------
+# GUARDAR UMBRAL ÓPTIMO
+# -------------------------------------------------------------------------
+import json
+threshold_info = {
+    "optimal_threshold": float(optimal_threshold),
+    "fire_index": int(fire_index),
+    "metrics": threshold_metrics,
+}
+with open(os.path.join(RUN_DIR, "optimal_threshold.json"), "w") as f:
+    json.dump(threshold_info, f, indent=2)
+print(f"Umbral guardado en: {os.path.join(RUN_DIR, 'optimal_threshold.json')}\n")
+
 training_end = datetime.now()
 training_duration = training_end - train_start
 total_seconds = int(training_duration.total_seconds())
