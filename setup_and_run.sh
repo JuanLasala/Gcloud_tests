@@ -26,21 +26,21 @@ sudo apt install -y wget git unzip # Dependencias básicas
 # --------------------------------------------------------------------------
 
 PYENV_ROOT="$HOME/.pyenv"
-ENV_NAME="train-env"
 PYTHON_VERSION="3.11.8"
+ENV_DIR="$HOME/.venvs/train-env"
 
 echo "=========================="
 echo " 2) Instalando pyenv y entorno virtual"
 echo "=========================="
 
-# 2a. Install dependencies (Ubuntu/Debian)
+# 2a. Install build dependencies (Ubuntu/Debian)
 sudo apt update
 sudo apt install -y make build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev curl git \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
     libffi-dev liblzma-dev
 
-# 2b. Install pyenv if not present
+# 2b. Install pyenv if missing
 if [ ! -d "$PYENV_ROOT" ]; then
     echo "Instalando pyenv..."
     git clone https://github.com/pyenv/pyenv.git $PYENV_ROOT
@@ -56,13 +56,20 @@ if ! pyenv versions --bare | grep -q "$PYTHON_VERSION"; then
     pyenv install $PYTHON_VERSION
 fi
 
-# 2e. Create virtual environment if missing
-if ! pyenv virtualenvs --bare | grep -q "$ENV_NAME"; then
-    pyenv virtualenv $PYTHON_VERSION $ENV_NAME
+# 2e. Set local python version for this session
+pyenv shell $PYTHON_VERSION
+
+# 2f. Create virtual environment if missing
+if [ ! -d "$ENV_DIR" ]; then
+    echo "Creando entorno virtual en $ENV_DIR"
+    python -m venv $ENV_DIR
 fi
 
-# 2f. Activate environment
-pyenv activate $ENV_NAME
+# 2g. Activate environment
+source $ENV_DIR/bin/activate
+
+echo "Entorno activado con Python:"
+python --version
 # --------------------------------------------------------------------------
 # Bloque 3: Instalación de Dependencias (Optimizado)
 # --------------------------------------------------------------------------
