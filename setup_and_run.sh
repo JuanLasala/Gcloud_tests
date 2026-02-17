@@ -27,7 +27,8 @@ sudo apt install -y wget git unzip # Dependencias básicas
 
 PYENV_ROOT="$HOME/.pyenv"
 PYTHON_VERSION="3.11.8"
-ENV_DIR="$HOME/.venvs/train-env"
+#ENV_DIR="$HOME/.venvs/train-env"
+ENV_DIR="/home/fperdomo/.venvs/train-env" # ruta absoluta para evitar problemas con pyenv
 
 echo "=========================="
 echo " 2) Instalando pyenv y entorno virtual"
@@ -77,16 +78,20 @@ python --version
 echo "=========================="
 echo " 3) Instalando dependencias (solo si es necesario) "
 echo "=========================="
-# Usamos un archivo 'sentinel' para saber si ya instalamos las dependencias
-SENTINEL_FILE="$SCRIPT_DIR/.dependencies_installed"
 
-if [ ! -f "$SENTINEL_FILE" ]; then
-    echo "Instalando PyTorch, HuggingFace y utilidades..."
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-    pip install transformers datasets evaluate pillow matplotlib scikit-learn
-    touch "$SENTINEL_FILE" # Crea el archivo sentinel
+# INSTALAR DEPENDENCIAS
+echo "Entorno activado con Python:"
+python --version
+
+# 2h. Upgrade pip (recommended)
+pip install --upgrade pip
+
+# 2i. Install requirements if file exists
+if [ -f "requirements.txt" ]; then
+    echo "Instalando dependencias desde requirements.txt..."
+    pip install -r requirements.txt
 else
-    echo "Dependencias ya instaladas (archivo sentinel encontrado)."
+    echo "No se encontró requirements.txt"
 fi
 
 # --------------------------------------------------------------------------
@@ -99,7 +104,14 @@ echo "=========================="
 
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
-gsutil -m rsync -r gs://fire_model_dataset/ .
+
+# Check if required dataset folders exist
+if [ -d "train" ] && [ -d "test" ] && [ -d "val" ]; then
+    echo "Dataset already present (train, test, val found). Skipping download."
+else
+    echo "Dataset not found. Downloading from GCS..."
+    #gsutil -m rsync -r gs://fire_model_dataset/ .
+fi
 
 echo "Dataset copiado a: $SCRIPT_DIR"
 
@@ -112,10 +124,10 @@ echo " 5) Ejecutando entrenamiento "
 echo "=========================="
 
 #python train_vit.py
-python train_efficientnet.py
+#python train_efficientnet.py
 
 echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
 
-sudo shutdown -h now
+#sudo shutdown -h now
