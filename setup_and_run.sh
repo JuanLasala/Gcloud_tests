@@ -26,7 +26,7 @@ sudo apt install -y wget git unzip # Dependencias básicas
 # --------------------------------------------------------------------------
 
 CONDA_PATH="$HOME/miniconda"
-ENV_NAME="vit_env"
+ENV_NAME="train-env"
 
 echo "=========================="
 echo " 2) Instalando/Reinstalando Miniconda y Entorno"
@@ -45,7 +45,7 @@ fi
 eval "$($CONDA_PATH/bin/conda shell.bash hook)"
 conda activate $ENV_NAME || { 
     echo "Creando entorno Conda nuevo: $ENV_NAME"
-    conda create -y -n $ENV_NAME python=3.10
+    conda create -y -n $ENV_NAME python=3.11vsc
     conda activate $ENV_NAME
 }
 
@@ -97,3 +97,5 @@ python train_efficientnet.py
 echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
+
+sudo shutdown -h now
