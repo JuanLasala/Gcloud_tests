@@ -127,10 +127,10 @@ echo " 5) Ejecutando entrenamiento "
 echo "=========================="
 
 #python train_vit.py
-#python train_efficientnet.py
+python train_efficientnet.py
 
 echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
 
-#sudo shutdown -h now
+sudo shutdown -h now

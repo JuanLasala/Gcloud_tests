@@ -1,16 +1,21 @@
 from datasets import load_dataset, DatasetDict
 
 def load_imagefolder(path):
-    ds_full = load_dataset("imagefolder", data_dir=path)
-    # Add a new column "path" to the dataset
-    def add_path(example):
+    ds = load_dataset(
+        "imagefolder",
+        data_dir=path,
+        split={
+            "train": "train",
+            "val": "val",
+            "test": "test"
+        }
+    )
+
+    def replace_image_with_path(example):
         example["path"] = example["image"].filename
+        del example["image"]
         return example
-        # Apply the function to add the "path" column to the dataset
-    ds_full = ds_full.map(add_path)
-    # Return the modified dataset as a DatasetDict
-    return DatasetDict({
-        "train": ds_full["train"],
-        "val": ds_full["validation"],
-        "test": ds_full["test"]
-    })
+
+    ds = ds.map(replace_image_with_path)
+
+    return DatasetDict(ds)

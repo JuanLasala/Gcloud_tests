@@ -41,7 +41,7 @@ print(f"Guardando resultados en: {RUN_DIR}\n")
 # ---------------------------------------------------------------------
 
 DATA_PATH = "/home/jlasala/ViT tests"
-TARGET_CHANNELS = 13
+TARGET_CHANNELS = 11
 
 ds = load_imagefolder(DATA_PATH)
 

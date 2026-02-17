@@ -12,11 +12,10 @@ def _ensure_channel_last(arr: np.ndarray) -> np.ndarray:
 
 
 def _normalize_array(arr: np.ndarray) -> np.ndarray:
-    if np.issubdtype(arr.dtype, np.integer):
-        max_val = np.iinfo(arr.dtype).max
-        if max_val > 0:
-            return arr.astype(np.float32) / float(max_val)
-    return arr.astype(np.float32)
+    # Example: 2nd and 98th percentile clipping
+    p2, p98 = np.percentile(arr, (2, 98))
+    arr = np.clip(arr, p2, p98)
+    return (arr - p2) / (p98 - p2 + 1e-8)
 
 
 def load_multiband_tiff(path: str, target_channels: int) -> torch.Tensor:
