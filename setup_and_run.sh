@@ -4,6 +4,9 @@ set -e
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
 
+#Change branch
+git checkout v2
+
 echo "=========================="
 echo " [NOTA] Ejecutando SETUP desde: $SCRIPT_DIR"
 echo "=========================="
