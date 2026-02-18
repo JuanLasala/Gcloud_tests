@@ -7,6 +7,7 @@ recall = evaluate.load("recall")
 f1 = evaluate.load("f1")
 
 def compute_metrics(eval_pred):
+    print(f"Computing metrics...")
     logits, labels = eval_pred # Unpack logits and labels
     preds = np.argmax(logits, axis=1) # Convert logits to predictions by taking the argmax along axis 1
     # Compute metrics and return as a dictionary
