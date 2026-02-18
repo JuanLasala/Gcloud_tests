@@ -6,7 +6,7 @@ def load_imagefolder(path):
         data_dir=path,
         split={
             "train": "train",
-            "val": "val",
+            'validation': 'validation',
             "test": "test"
         }
     )

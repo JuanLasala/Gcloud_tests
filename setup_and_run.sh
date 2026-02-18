@@ -109,7 +109,7 @@ echo "=========================="
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
 
 # Check if required dataset folders exist
-if [ -d "train" ] && [ -d "test" ] && [ -d "val" ]; then
+if [ -d "train" ] && [ -d "test" ] && [ -d 'validation' ]; then
     echo "Dataset already present (train, test, val found). Skipping download."
 else
     echo "Dataset not found. Downloading from GCS..."

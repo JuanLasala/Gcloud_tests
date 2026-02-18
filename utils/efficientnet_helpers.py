@@ -23,6 +23,6 @@ def build_multiband_transforms(
 def apply_effnet_transforms(ds: Dict, train_transform: Callable, eval_transform: Callable) -> Dict:
     return {
         "train": ds["train"].with_transform(train_transform),
-        "val": ds["val"].with_transform(eval_transform),
+        'validation': ds['validation'].with_transform(eval_transform),
         "test": ds["test"].with_transform(eval_transform),
     }

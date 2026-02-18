@@ -55,7 +55,7 @@ print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train
 
 # Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
 ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
-ds["val"] = ds["val"].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
+ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
 """
 
 # ---------------------------------------------------------------------
@@ -86,7 +86,7 @@ model, processor = load_hf_model(
 )
 model = torch.compile(model)
 
-sample = load_multiband_tiff(ds["val"][0]["path"], target_channels=TARGET_CHANNELS)
+sample = load_multiband_tiff(ds['validation'][0]["path"], target_channels=TARGET_CHANNELS)
 print("Sample multiband shape:", sample.shape)
 
 # ---------------------------------------------------------------------
@@ -122,7 +122,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=ds["train"],
-    eval_dataset=ds["val"],
+    eval_dataset=ds['validation'],
     data_collator=collator,
     compute_metrics=compute_metrics,
     tokenizer=processor
@@ -150,7 +150,7 @@ print(metrics)
 # THRESHOLD TUNING (en val set)
 # -------------------------------------------------------------------------
 print("\n=== Sintonizando umbral (threshold) en validación ===")
-val_preds = trainer.predict(ds["val"])
+val_preds = trainer.predict(ds['validation'])
 val_logits = val_preds.predictions
 val_labels = val_preds.label_ids
 
@@ -177,7 +177,7 @@ trainer.save_metrics("eval", metrics)
 # IMÁGENES MAL CLASIFICADAS
 # -------------------------------------------------------------------------
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds["val"], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
+    model, processor, ds['validation'], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
 )
 
 create_gradcam_for_misclassified(
@@ -194,7 +194,7 @@ plot_confusion(y_true, y_pred_threshold, labels, RUN_DIR)
 print('confusion done')
 save_classification_report(y_true, y_pred_threshold, labels, RUN_DIR)
 print('report done')
-"""fps = inspect_fp(model, processor, ds["val"], labels)
+"""fps = inspect_fp(model, processor, ds['validation'], labels)
 print("FOUND FP:", len(fps))
 for r in fps[:10]:
     print(r)
