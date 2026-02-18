@@ -19,7 +19,15 @@ def _normalize_array(arr: np.ndarray) -> np.ndarray:
 
 
 def load_multiband_tiff(path: str, target_channels: int) -> torch.Tensor:
-    arr = tifffile.imread(path)
+    try:
+        arr = tifffile.imread(path)
+    except ValueError as err:
+        if "requires the 'imagecodecs' package" in str(err):
+            raise RuntimeError(
+                "TIFF decoding failed because imagecodecs is missing. "
+                "Install it with: pip install imagecodecs"
+            ) from err
+        raise
     arr = _ensure_channel_last(arr)
     arr = _normalize_array(arr)
 
