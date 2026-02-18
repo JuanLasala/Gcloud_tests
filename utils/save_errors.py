@@ -40,7 +40,8 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
             image = item["image"].convert("RGB")
             image_path = None
 
-        true_label = int(item["label"])
+        label_key = "label" if "label" in item else "labels"
+        true_label = int(item[label_key])
 
         # --------------------------
         # 2) Process image
