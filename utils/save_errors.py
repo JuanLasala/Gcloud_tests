@@ -7,6 +7,16 @@ from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
 fp_paths = []
 fn_paths = []
 
+
+def _get_model_input_channels(model, default=13):
+    if hasattr(model, "config") and hasattr(model.config, "num_channels"):
+        return int(model.config.num_channels)
+    for module in model.modules():
+        if isinstance(module, torch.nn.Conv2d):
+            return int(module.in_channels)
+    return default
+
+
 def save_misclassified_images(model, processor, dataset, output_dir, fire_index, no_fire_index): 
     """
     Save misclassified images (FP and FN) in separate folders.
@@ -22,6 +32,7 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
 
     model.eval()
     device = next(model.parameters()).device
+    target_channels = _get_model_input_channels(model)
 
     fp_count = 0
     fn_count = 0
@@ -34,7 +45,7 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
         # --------------------------
         if "path" in item:
             image_path = item["path"]
-            tensor = load_multiband_tiff(image_path, target_channels=13)
+            tensor = load_multiband_tiff(image_path, target_channels=target_channels)
             image = Image.fromarray(make_rgb_preview(tensor))
         else:
             image = item["image"].convert("RGB")
