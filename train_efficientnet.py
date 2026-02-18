@@ -40,7 +40,7 @@ print(f"Guardando resultados en: {RUN_DIR}\n")
 # CARGA DEL DATASET
 # ---------------------------------------------------------------------
 
-DATA_PATH = "/home/jlasala/ViT tests"
+DATA_PATH = "./dataset"
 TARGET_CHANNELS = 11
 
 ds = load_imagefolder(DATA_PATH)
