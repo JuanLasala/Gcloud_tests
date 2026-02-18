@@ -68,7 +68,7 @@ class TorchvisionEfficientNetForClassification(torch.nn.Module):
         self.config.num_channels = in_channels
 
     def forward(self, pixel_values=None, labels=None, **kwargs):
-        pixel_values = pixel_values.to(self.efficientnet.dtype)
+        pixel_values = pixel_values.to(torch.float32)
         logits = self.efficientnet(pixel_values)
         loss = F.cross_entropy(logits, labels) if labels is not None else None
         return ImageClassifierOutput(loss=loss, logits=logits)
