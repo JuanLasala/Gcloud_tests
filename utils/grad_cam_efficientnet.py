@@ -70,7 +70,7 @@ def generate_efficientnet_gradcam(model, processor, image_path, output_path):
         gradients["value"] = grad_output[0]
 
     fh = target_layer.register_forward_hook(forward_hook)
-    bh = target_layer.register_backward_hook(backward_hook)
+    bh = target_layer.register_full_backward_hook(backward_hook)
 
     # ----- forward -----
     outputs = model(**inputs)
@@ -107,7 +107,9 @@ def generate_efficientnet_gradcam(model, processor, image_path, output_path):
         print(f"[ERROR] Invalid CAM for {image_path}, shape={cam.shape}")
         return
 
-    cam_resized = cv2.resize(cam, dsize)
+    # OpenCV resize can fail on unsupported dtypes (e.g. float16 from AMP).
+    cam = np.ascontiguousarray(cam.astype(np.float32, copy=False))
+    cam_resized = cv2.resize(cam, dsize, interpolation=cv2.INTER_LINEAR)
 
 
     heatmap = cv2.applyColorMap(
