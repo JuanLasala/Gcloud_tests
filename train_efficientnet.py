@@ -42,7 +42,7 @@ print(f"Guardando resultados en: {RUN_DIR}\n")
 # CARGA DEL DATASET
 # ---------------------------------------------------------------------
 
-DATA_PATH = "./dataset"
+DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
 TARGET_CHANNELS = 11
 
 ds = load_imagefolder(DATA_PATH)
@@ -127,7 +127,7 @@ trainer = Trainer(
     eval_dataset=ds['validation'],
     data_collator=collator,
     compute_metrics=compute_metrics,
-    tokenizer=processor
+    processing_class=processor
 )
 
 # ---------------------------------------------------------------------
