@@ -44,6 +44,7 @@ print(f"Guardando resultados en: {RUN_DIR}\n")
 
 DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
 TARGET_CHANNELS = 11
+USE_TORCH_COMPILE = False
 
 ds = load_imagefolder(DATA_PATH)
 
@@ -86,7 +87,8 @@ model, processor = load_hf_model(
     label2id=label2id,
     in_channels=TARGET_CHANNELS,
 )
-model = torch.compile(model)
+if USE_TORCH_COMPILE and hasattr(torch, "compile"):
+    model = torch.compile(model)
 
 sample = load_multiband_tiff(ds['validation'][0]["path"], target_channels=TARGET_CHANNELS)
 print("Sample multiband shape:", sample.shape)
