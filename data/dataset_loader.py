@@ -8,14 +8,11 @@ def load_imagefolder(path):
             "train": "train",
             'validation': 'validation',
             "test": "test"
-        }
+        },
+        decode=False  # Keep file paths instead of decoding images with PIL
     )
 
-    def replace_image_with_path(example):
-        example["path"] = example["image"].filename
-        del example["image"]
-        return example
-
-    ds = ds.map(replace_image_with_path)
+    ### Rename "image" column to "path" for compatibility with load_multiband_tiff
+    ds = ds.rename_column("image", "path")
 
     return DatasetDict(ds)
