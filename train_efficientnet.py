@@ -24,8 +24,10 @@ from utils.threshold_tuning import find_optimal_threshold, apply_threshold
 # CONFIGURACIÓN GENERAL
 # ---------------------------------------------------------------------
 
-#MODEL_NAME = "google/efficientnet-b4" #modelo a elegir (en este caso EfficientNet-b4)
-MODEL_NAME = "google/efficientnet-v2-s"
+# Modelo a elegir:
+# - "torchvision/efficientnet_v2_s" (EfficientNetV2-S)
+# - "google/efficientnet-b4" (switch back to HF EfficientNet-B4)
+MODEL_NAME = "torchvision/efficientnet_v2_s"
 RESULTS_BASE = "./resultados_efficientnet" #directorio para guardar resultados
 
 RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
