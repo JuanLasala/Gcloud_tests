@@ -69,6 +69,12 @@ python train_efficientnet.py --resume_from ./resultados_efficientnet/efficientne
 # Resume automatically from the latest run inside resultados_efficientnet
 python train_efficientnet.py --auto_resume_last
 
+# If the resumed checkpoint already reached max epochs, extend training by N epochs
+python train_efficientnet.py --auto_resume_last --resume_additional_epochs 5
+
+# Resume to a fixed total epoch target (recommended for deterministic runs)
+python train_efficientnet.py --auto_resume_last --resume_to_total_epochs 20
+
 # Optional: force output directory explicitly (useful if not inferred from checkpoint path)
 python train_efficientnet.py \
   --resume_from ./resultados_efficientnet/efficientnet_run_2026-02-18_10-00-00 \
@@ -119,3 +125,10 @@ chmod +x setup_and_run.sh
 - Customization tips:
   - To only install dependencies without running training, comment out the final `python` line.
   - To use a different dataset source, replace the `gsutil rsync` command with your copy/sync command.
+  - To control resume target epochs in `setup_and_run.sh`, set `RESUME_TOTAL_EPOCHS` before running:
+
+```bash
+RESUME_TOTAL_EPOCHS=30 ./setup_and_run.sh
+```
+
+- In Bash, `RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"` means: use current `RESUME_TOTAL_EPOCHS` if defined; otherwise default to `20`.

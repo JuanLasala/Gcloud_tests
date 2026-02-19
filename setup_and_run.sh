@@ -127,7 +127,15 @@ echo " 5) Ejecutando entrenamiento "
 echo "=========================="
 
 #python train_vit.py
-python train_efficientnet.py --auto_resume_last >  training_log.txt
+RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
+
+if ls -d resultados_efficientnet/efficientnet_run_* >/dev/null 2>&1; then
+    echo "Run previo detectado: reanudando último run hasta total de ${RESUME_TOTAL_EPOCHS} epochs"
+    python train_efficientnet.py --auto_resume_last --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS" > training_log.txt
+else
+    echo "No hay runs previos: iniciando entrenamiento desde cero"
+    python train_efficientnet.py > training_log.txt
+fi
 
 echo "=========================="
 echo " Entrenamiento finalizado "

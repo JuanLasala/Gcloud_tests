@@ -1,5 +1,6 @@
 import os
 import argparse
+import json
 import torch
 from datetime import datetime
 from transformers import Trainer
@@ -57,6 +58,25 @@ def parse_args():
         default=None,
         help="Optional output run directory. Useful to continue writing into an existing run folder.",
     )
+    epochs_group = parser.add_mutually_exclusive_group()
+    epochs_group.add_argument(
+        "--resume_additional_epochs",
+        type=float,
+        default=0.0,
+        help=(
+            "Extra epochs to add when resuming. Useful if resumed checkpoint already reached "
+            "num_train_epochs and would otherwise skip training."
+        ),
+    )
+    epochs_group.add_argument(
+        "--resume_to_total_epochs",
+        type=float,
+        default=None,
+        help=(
+            "Set an absolute total epoch target when resuming (e.g. 20). "
+            "If checkpoint is already at/above this value, no extra training is run."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -108,6 +128,22 @@ def find_latest_run_dir(results_base):
 
     run_dirs.sort(key=lambda path: os.path.getmtime(path))
     return run_dirs[-1]
+
+
+def read_checkpoint_progress(checkpoint_dir):
+    state_file = os.path.join(checkpoint_dir, "trainer_state.json")
+    if not os.path.isfile(state_file):
+        return None, None
+
+    with open(state_file, "r") as state_handle:
+        trainer_state = json.load(state_handle)
+
+    epoch = trainer_state.get("epoch")
+    global_step = trainer_state.get("global_step")
+
+    epoch_value = float(epoch) if epoch is not None else None
+    step_value = int(global_step) if global_step is not None else None
+    return epoch_value, step_value
 
 
 args = parse_args()
@@ -231,6 +267,36 @@ print("Definiendo training arguments...")
 training_args = get_training_args(
     output_dir=RUN_DIR
 )
+
+if RESUME_CHECKPOINT:
+    current_epoch, current_step = read_checkpoint_progress(RESUME_CHECKPOINT)
+    if current_epoch is not None:
+        print(f"Progreso del checkpoint: epoch={current_epoch:.4f}, global_step={current_step}")
+
+    original_epochs = float(training_args.num_train_epochs)
+    if args.resume_to_total_epochs is not None:
+        target_total = float(args.resume_to_total_epochs)
+        training_args.num_train_epochs = target_total
+        print(
+            "Usando objetivo total de epochs para reanudar: "
+            f"num_train_epochs -> {training_args.num_train_epochs}"
+        )
+        if current_epoch is not None and current_epoch >= target_total:
+            print(
+                "[WARN] El checkpoint ya alcanzó/superó resume_to_total_epochs; "
+                "entrenamiento adicional será 0."
+            )
+    elif args.resume_additional_epochs > 0:
+        training_args.num_train_epochs = original_epochs + float(args.resume_additional_epochs)
+        print(
+            "Extendiendo num_train_epochs para continuar entrenamiento: "
+            f"{original_epochs} -> {training_args.num_train_epochs}"
+        )
+    elif current_epoch is not None and current_epoch >= original_epochs:
+        print(
+            "[WARN] El checkpoint ya alcanzó num_train_epochs; entrenamiento adicional será 0. "
+            "Usa --resume_additional_epochs N o --resume_to_total_epochs M para seguir entrenando."
+        )
 
 # ---------------------------------------------------------------------
 # TRAINER
