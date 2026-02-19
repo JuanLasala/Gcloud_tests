@@ -73,7 +73,7 @@ class TorchvisionEfficientNetForClassification(torch.nn.Module):
         return ImageClassifierOutput(loss=loss, logits=logits)
 
 
-def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=11):
+def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=12):
     if model_name == "torchvision/efficientnet_v2_s":
         model = TorchvisionEfficientNetForClassification(
             num_labels=num_labels,
