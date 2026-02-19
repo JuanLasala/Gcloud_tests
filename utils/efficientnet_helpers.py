@@ -8,12 +8,12 @@ def build_multiband_transforms(
     load_multiband_tiff_fn: Callable,
 ) -> Tuple[Callable, Callable]:
     def train_transform_effnet(batch: Dict):
-        tensors = [load_multiband_tiff_fn(p, target_channels=target_channels) for p in batch["path"]]
+        tensors = [load_multiband_tiff_fn(p) for p in batch["path"]]
         tensors = [train_augmentations_fn(t) for t in tensors]
         return {"pixel_values": tensors, "labels": batch["label"], "path": batch["path"]}
 
     def eval_transform_effnet(batch: Dict):
-        tensors = [load_multiband_tiff_fn(p, target_channels=target_channels) for p in batch["path"]]
+        tensors = [load_multiband_tiff_fn(p) for p in batch["path"]]
         tensors = [eval_augmentations_fn(t) for t in tensors]
         return {"pixel_values": tensors, "labels": batch["label"], "path": batch["path"]}
 
