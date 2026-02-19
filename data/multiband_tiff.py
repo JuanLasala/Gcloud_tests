@@ -2,23 +2,25 @@ import numpy as np
 import torch
 import tifffile
 
-
 def _ensure_channel_last(arr: np.ndarray) -> np.ndarray:
     if arr.ndim == 2:
         arr = arr[..., None]
-    if arr.ndim == 3 and arr.shape[0] in (11, 13) and arr.shape[0] < arr.shape[-1]:
+
+    # If shape is (C, H, W), convert to (H, W, C)
+    if arr.ndim == 3 and arr.shape[0] == 11:
         arr = np.transpose(arr, (1, 2, 0))
+
     return arr
 
 
 def _normalize_array(arr: np.ndarray) -> np.ndarray:
-    # Example: 2nd and 98th percentile clipping
+    # 2nd and 98th percentile clipping
     p2, p98 = np.percentile(arr, (2, 98))
     arr = np.clip(arr, p2, p98)
     return (arr - p2) / (p98 - p2 + 1e-8)
 
 
-def load_multiband_tiff(path: str, target_channels: int) -> torch.Tensor:
+def load_multiband_tiff(path: str) -> torch.Tensor:
     try:
         arr = tifffile.imread(path)
     except ValueError as err:
@@ -28,14 +30,12 @@ def load_multiband_tiff(path: str, target_channels: int) -> torch.Tensor:
                 "Install it with: pip install imagecodecs"
             ) from err
         raise
+
     arr = _ensure_channel_last(arr)
     arr = _normalize_array(arr)
 
-    if arr.shape[-1] < target_channels:
-        pad = target_channels - arr.shape[-1]
-        arr = np.pad(arr, ((0, 0), (0, 0), (0, pad)), mode="constant")
-    elif arr.shape[-1] > target_channels:
-        arr = arr[..., :target_channels]
+    # Optional but recommended: reduce RAM pressure
+    arr = arr.astype(np.float16)
 
     tensor = torch.from_numpy(arr).permute(2, 0, 1)
     return tensor
