@@ -57,7 +57,24 @@ python train_efficientnet.py
 Notes and tips
 
 - Quick testing: `train_efficientnet.py` contains a commented block that reduces the dataset size (`shuffle().select(range(...))`) for fast trials.
-- Resume training: to resume from a checkpoint, enable `resume_from_checkpoint` in the `trainer.train(...)` call.
+- Resume training: use CLI flags without editing code:
+
+```bash
+# Resume from a specific checkpoint directory
+python train_efficientnet.py --resume_from ./resultados_efficientnet/efficientnet_run_2026-02-18_10-00-00/checkpoint-1200
+
+# Resume from a run directory (auto-picks latest checkpoint-*)
+python train_efficientnet.py --resume_from ./resultados_efficientnet/efficientnet_run_2026-02-18_10-00-00
+
+# Resume automatically from the latest run inside resultados_efficientnet
+python train_efficientnet.py --auto_resume_last
+
+# Optional: force output directory explicitly (useful if not inferred from checkpoint path)
+python train_efficientnet.py \
+  --resume_from ./resultados_efficientnet/efficientnet_run_2026-02-18_10-00-00 \
+  --run_dir ./resultados_efficientnet/efficientnet_run_2026-02-18_10-00-00
+```
+
 - Outputs: run artifacts are saved under `resultados_efficientnet/` and include `all_results.json`, `eval_results.json`, `classification_report.txt`, `misclassified/`, and the saved model.
 - GPU: Hugging Face `Trainer` uses GPU if available (and configured). Ensure you have a compatible `torch` + CUDA installation.
 - Multiband inputs: `train_efficientnet.py` loads 11-band TIFFs, pads to 13 channels, and expands the first conv layer to match.

@@ -1,4 +1,5 @@
 import os
+import argparse
 import torch
 from datetime import datetime
 from transformers import Trainer
@@ -30,13 +31,126 @@ from utils.threshold_tuning import find_optimal_threshold, apply_threshold
 MODEL_NAME = "torchvision/efficientnet_v2_s"
 RESULTS_BASE = "./resultados_efficientnet" #directorio para guardar resultados
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train EfficientNet with optional checkpoint resume.")
+    resume_group = parser.add_mutually_exclusive_group()
+    resume_group.add_argument(
+        "--resume_from",
+        type=str,
+        default=None,
+        help=(
+            "Checkpoint directory to resume from (e.g. .../checkpoint-1200) or run directory "
+            "containing checkpoints. If omitted, starts a new run."
+        ),
+    )
+    resume_group.add_argument(
+        "--auto_resume_last",
+        action="store_true",
+        help=(
+            "Automatically resume from the latest run directory under resultados_efficientnet "
+            "(picks latest checkpoint-* inside that run)."
+        ),
+    )
+    parser.add_argument(
+        "--run_dir",
+        type=str,
+        default=None,
+        help="Optional output run directory. Useful to continue writing into an existing run folder.",
+    )
+    return parser.parse_args()
+
+
+def find_latest_checkpoint(path):
+    if not os.path.isdir(path):
+        return None
+
+    direct_trainer_checkpoint_files = {
+        "model.safetensors",
+        "optimizer.pt",
+        "scheduler.pt",
+        "trainer_state.json",
+        "training_args.bin",
+    }
+
+    if direct_trainer_checkpoint_files.issubset(set(os.listdir(path))):
+        return path
+
+    checkpoints = []
+    for entry in os.listdir(path):
+        if not entry.startswith("checkpoint-"):
+            continue
+        checkpoint_path = os.path.join(path, entry)
+        if not os.path.isdir(checkpoint_path):
+            continue
+        step_str = entry.replace("checkpoint-", "")
+        if step_str.isdigit():
+            checkpoints.append((int(step_str), checkpoint_path))
+
+    if not checkpoints:
+        return None
+
+    checkpoints.sort(key=lambda item: item[0])
+    return checkpoints[-1][1]
+
+
+def find_latest_run_dir(results_base):
+    if not os.path.isdir(results_base):
+        return None
+
+    run_dirs = []
+    for entry in os.listdir(results_base):
+        full_path = os.path.join(results_base, entry)
+        if os.path.isdir(full_path) and entry.startswith("efficientnet_run_"):
+            run_dirs.append(full_path)
+
+    if not run_dirs:
+        return None
+
+    run_dirs.sort(key=lambda path: os.path.getmtime(path))
+    return run_dirs[-1]
+
+
+args = parse_args()
+
+resume_source = args.resume_from
+if args.auto_resume_last:
+    latest_run = find_latest_run_dir(RESULTS_BASE)
+    if latest_run is None:
+        raise ValueError(
+            f"No run directories found in '{RESULTS_BASE}'. "
+            "Expected folders like efficientnet_run_YYYY-mm-dd_HH-MM-SS."
+        )
+    resume_source = latest_run
+
 RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-RUN_DIR = os.path.join(RESULTS_BASE, f"efficientnet_run_{RUN_ID}")
+
+if args.run_dir:
+    RUN_DIR = args.run_dir
+elif resume_source:
+    resume_abs = os.path.abspath(resume_source)
+    if os.path.basename(resume_abs).startswith("checkpoint-"):
+        RUN_DIR = os.path.dirname(resume_abs)
+    else:
+        RUN_DIR = resume_abs
+else:
+    RUN_DIR = os.path.join(RESULTS_BASE, f"efficientnet_run_{RUN_ID}")
+
 os.makedirs(RUN_DIR, exist_ok=True)
+
+RESUME_CHECKPOINT = None
+if resume_source:
+    RESUME_CHECKPOINT = find_latest_checkpoint(resume_source)
+    if RESUME_CHECKPOINT is None:
+        raise ValueError(
+            f"No valid checkpoint found in '{resume_source}'. "
+            "Pass a checkpoint dir or a run dir containing checkpoint-* folders."
+        )
 
 print(f"\n=== Entrenamiento EfficientNet-V2 ===")
 print(f"Modelo base: {MODEL_NAME}")
 print(f"Guardando resultados en: {RUN_DIR}\n")
+if RESUME_CHECKPOINT:
+    print(f"Reanudando desde checkpoint: {RESUME_CHECKPOINT}\n")
 
 # ---------------------------------------------------------------------
 # CARGA DEL DATASET
@@ -137,10 +251,12 @@ trainer = Trainer(
 # ---------------------------------------------------------------------
 print("\n=== Iniciando entrenamiento ===")
 
-#PATH_TO_RESUME = "./resultados_efficientnet/efficientnet_run_2025-12-09_19-51-14"
-#train_output = trainer.train(resume_from_checkpoint=PATH_TO_RESUME)
 train_start = datetime.now()
-train_output = trainer.train()
+print(ds["val"][0])
+if RESUME_CHECKPOINT:
+    train_output = trainer.train(resume_from_checkpoint=RESUME_CHECKPOINT)
+else:
+    train_output = trainer.train()
 trainer.save_model(os.path.join(RUN_DIR, "best_model"))
 
 # Curva de pérdidas
