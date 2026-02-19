@@ -240,7 +240,7 @@ model, processor = load_hf_model(
 #if USE_TORCH_COMPILE and hasattr(torch, "compile"): # // DISABLE TORCH.COMPILE FOR NOW
     #model = torch.compile(model, mode="reduce-overhead")
 
-sample = load_multiband_tiff(ds['validation'][0]["path"], target_channels=TARGET_CHANNELS)
+sample = load_multiband_tiff(ds['validation'][0]["path"])
 print("Sample multiband shape:", sample.shape)
 
 # ---------------------------------------------------------------------
