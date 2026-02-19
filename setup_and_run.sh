@@ -127,7 +127,7 @@ echo " 5) Ejecutando entrenamiento "
 echo "=========================="
 
 #python train_vit.py
-python train_efficientnet.py
+python train_efficientnet.py --auto_resume_last
 
 echo "=========================="
 echo " Entrenamiento finalizado "
