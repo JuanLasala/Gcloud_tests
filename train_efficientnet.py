@@ -252,7 +252,6 @@ trainer = Trainer(
 print("\n=== Iniciando entrenamiento ===")
 
 train_start = datetime.now()
-print(ds["val"][0])
 if RESUME_CHECKPOINT:
     train_output = trainer.train(resume_from_checkpoint=RESUME_CHECKPOINT)
 else:
