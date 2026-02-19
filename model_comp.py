@@ -18,7 +18,7 @@ TEST_DATA_DIR = "/home/jlasala/ViT tests/val"  # o ds["test"]
 LABELS = ["Fire", "No_Fire"]
 fire_index = LABELS.index("Fire")
 no_fire_index = LABELS.index("No_Fire")
-BATCH_SIZE = 16
+BATCH_SIZE = 24
 
 # --- Helpers: cargar dataset (HuggingFace imagefolder) ---
 from datasets import load_dataset

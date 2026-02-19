@@ -3,7 +3,7 @@ from transformers import TrainingArguments
 def get_training_args(output_dir, lr=3e-5, epochs=5):
     return TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=16,
+        per_device_train_batch_size=24,
         fp16=True,
         eval_strategy="epoch", # val is being used
         save_strategy="epoch",
@@ -17,6 +17,8 @@ def get_training_args(output_dir, lr=3e-5, epochs=5):
         metric_for_best_model="accuracy",
         greater_is_better=True,
         label_names=["labels"],
-        dataloader_num_workers=4 # added in last commit
+        dataloader_num_workers=4, # added in last commit
+        dataloader_pin_memory=True,
+        dataloader_persistent_workers=True
         #label_smoothing_factor=0.1,
     )
