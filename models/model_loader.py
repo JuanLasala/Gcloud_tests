@@ -68,13 +68,12 @@ class TorchvisionEfficientNetForClassification(torch.nn.Module):
         self.config.num_channels = in_channels
 
     def forward(self, pixel_values=None, labels=None, **kwargs):
-        pixel_values = pixel_values.to(torch.float32)
         logits = self.efficientnet(pixel_values)
         loss = F.cross_entropy(logits, labels) if labels is not None else None
         return ImageClassifierOutput(loss=loss, logits=logits)
 
 
-def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=13):
+def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=11):
     if model_name == "torchvision/efficientnet_v2_s":
         model = TorchvisionEfficientNetForClassification(
             num_labels=num_labels,
