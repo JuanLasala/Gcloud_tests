@@ -46,7 +46,7 @@ def generate_efficientnet_gradcam(model, processor, image_path, output_path):
     target_channels = _get_model_input_channels(model)
     
     # ----- load image -----
-    tensor = load_multiband_tiff(image_path, target_channels=target_channels)
+    tensor = load_multiband_tiff(image_path)
     img_pil = Image.fromarray(make_rgb_preview(tensor))
     inputs = {"pixel_values": tensor.unsqueeze(0)}
 

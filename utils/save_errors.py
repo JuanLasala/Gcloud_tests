@@ -45,7 +45,7 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
         # --------------------------
         if "path" in item:
             image_path = item["path"]
-            tensor = load_multiband_tiff(image_path, target_channels=target_channels)
+            tensor = load_multiband_tiff(image_path)
             image = Image.fromarray(make_rgb_preview(tensor))
         else:
             image = item["image"].convert("RGB")
