@@ -6,8 +6,8 @@ def _ensure_channel_last(arr: np.ndarray) -> np.ndarray:
     if arr.ndim == 2:
         arr = arr[..., None]
 
-    # If shape is (C, H, W), convert to (H, W, C)
-    if arr.ndim == 3 and arr.shape[0] == 11:
+    # If first dimension looks like channels (small) and last looks spatial (large)
+    if arr.ndim == 3 and arr.shape[0] < arr.shape[1] and arr.shape[0] < arr.shape[2]:
         arr = np.transpose(arr, (1, 2, 0))
 
     return arr
