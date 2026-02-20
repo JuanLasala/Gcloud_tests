@@ -362,7 +362,7 @@ trainer.save_metrics("eval", metrics)
 # IMÁGENES MAL CLASIFICADAS
 # -------------------------------------------------------------------------
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds['validation'], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
+    model, ds['validation'], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
 )
 
 create_gradcam_for_misclassified(
