@@ -1,10 +1,10 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-5, epochs=1): # CHANGE BACK TO 20
+def get_training_args(output_dir, lr=3e-5, epochs=20):
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=16,
-        fp16=False,
+        fp16=True,
         bf16=False,
         eval_strategy="epoch", # val is being used
         save_strategy="epoch",
@@ -15,12 +15,14 @@ def get_training_args(output_dir, lr=3e-5, epochs=1): # CHANGE BACK TO 20
         learning_rate=lr,
         remove_unused_columns=False,
         load_best_model_at_end=True,
-        metric_for_best_model="accuracy",
+        metric_for_best_model="f1",
         greater_is_better=True,
         label_names=["labels"],
         dataloader_num_workers=4, # added in last commit
         dataloader_pin_memory=True,
         dataloader_persistent_workers=False,
-        dataloader_prefetch_factor=1
+        dataloader_prefetch_factor=1,
+        warmup_ratio=0.1,
+        weight_decay=0.01,
         #label_smoothing_factor=0.1,
     )
