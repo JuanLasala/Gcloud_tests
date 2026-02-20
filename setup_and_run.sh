@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+TEST_RUN=false
+for arg in "$@"; do
+    case "$arg" in
+        --test-run)
+            TEST_RUN=true
+            ;;
+    esac
+done
+
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
 
@@ -139,7 +148,12 @@ RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
   #  python train_efficientnet.py &> training_log.txt # stderr y stdout a training_log.txt
 #fi
 #### DESCOMENTAR ESTE BLOQUE ####
-python train_efficientnet.py &> training_log.txt # stderr y stdout a training_log.txt
+TRAIN_CMD=(python train_efficientnet.py)
+if [ "$TEST_RUN" = true ]; then
+    echo "Modo test-run activado: usando subconjunto reducido del dataset"
+    TRAIN_CMD+=(--test-run)
+fi
+"${TRAIN_CMD[@]}" &> training_log.txt # stderr y stdout a training_log.txt
 
 echo "=========================="
 echo " Entrenamiento finalizado "

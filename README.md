@@ -56,7 +56,12 @@ python train_efficientnet.py
 
 Notes and tips
 
-- Quick testing: `train_efficientnet.py` contains a commented block that reduces the dataset size (`shuffle().select(range(...))`) for fast trials.
+- Quick testing: use `--test-run` to run with a reduced dataset subset for fast trials.
+
+```bash
+python train_efficientnet.py --test-run
+```
+
 - Resume training: use CLI flags without editing code:
 
 ```bash
@@ -74,6 +79,9 @@ python train_efficientnet.py --auto_resume_last --resume_additional_epochs 5
 
 # Resume to a fixed total epoch target (recommended for deterministic runs)
 python train_efficientnet.py --auto_resume_last --resume_to_total_epochs 20
+
+# Quick test run (reduced train/validation subsets)
+python train_efficientnet.py --test-run
 
 # Optional: force output directory explicitly (useful if not inferred from checkpoint path)
 python train_efficientnet.py \
@@ -120,6 +128,9 @@ chmod +x setup_and_run.sh
 
 # Run it
 ./setup_and_run.sh
+
+# Run quick test mode (passes --test-run to train_efficientnet.py)
+./setup_and_run.sh --test-run
 ```
 
 - Customization tips:

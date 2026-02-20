@@ -58,6 +58,11 @@ def parse_args():
         default=None,
         help="Optional output run directory. Useful to continue writing into an existing run folder.",
     )
+    parser.add_argument(
+        "--test-run",
+        action="store_true",
+        help="Run a quick test with reduced train/validation subsets.",
+    )
     epochs_group = parser.add_mutually_exclusive_group()
     epochs_group.add_argument(
         "--resume_additional_epochs",
@@ -202,13 +207,14 @@ ds = load_imagefolder(DATA_PATH)
 # =================================================================
 # PRUEBA RÁPIDA CON DATASET REDUCIDO
 # =================================================================
-NUM_SAMPLES = 100
-NUM_VAL_SAMPLES = 20
-print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train y {NUM_VAL_SAMPLES} val !!!")
+if args.test_run:
+    NUM_SAMPLES = 100
+    NUM_VAL_SAMPLES = 20
+    print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train y {NUM_VAL_SAMPLES} val !!!")
 
-# Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
-ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
-ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
+    # Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
+    ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
+    ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
 
 
 # ---------------------------------------------------------------------
