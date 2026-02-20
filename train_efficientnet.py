@@ -4,6 +4,7 @@ import json
 import torch
 from datetime import datetime
 from transformers import Trainer
+from transformers import EarlyStoppingCallback
 
 
 # --- módulos propios ---
@@ -315,7 +316,10 @@ trainer = Trainer(
     eval_dataset=ds['validation'],
     data_collator=collator,
     compute_metrics=compute_metrics,
-    processing_class=processor
+    processing_class=processor,
+    callbacks=[EarlyStoppingCallback(
+        early_stopping_patience=4,
+        early_stopping_threshold=0.001,)]
 )
 
 # ---------------------------------------------------------------------
