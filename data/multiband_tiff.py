@@ -14,10 +14,23 @@ def _ensure_channel_last(arr: np.ndarray) -> np.ndarray:
 
 
 def _normalize_array(arr: np.ndarray) -> np.ndarray:
-    # 2nd and 98th percentile clipping
-    p2, p98 = np.percentile(arr, (2, 98))
-    arr = np.clip(arr, p2, p98)
-    return (arr - p2) / (p98 - p2 + 1e-8)
+    arr = arr.astype(np.float32)
+
+    # Normalize each band independently
+    for c in range(arr.shape[-1]):
+        band = arr[..., c]
+
+        p2, p98 = np.percentile(band, (2, 98))
+        band = np.clip(band, p2, p98)
+
+        # Avoid division by zero
+        denom = (p98 - p2)
+        if denom < 1e-6:
+            denom = 1.0
+
+        arr[..., c] = (band - p2) / denom
+
+    return arr
 
 
 def load_multiband_tiff(path: str) -> torch.Tensor:
@@ -34,8 +47,8 @@ def load_multiband_tiff(path: str) -> torch.Tensor:
     arr = _ensure_channel_last(arr)
     arr = _normalize_array(arr)
 
-    # Optional but recommended: reduce RAM pressure
-    arr = arr.astype(np.float16)
+    # Not downgrading to float16 because of precision issues
+    arr = arr.astype(np.float32)
 
     tensor = torch.from_numpy(arr).permute(2, 0, 1)
     return tensor

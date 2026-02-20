@@ -1,10 +1,11 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-5, epochs=5):
+def get_training_args(output_dir, lr=3e-5, epochs=2): # CHANGE BACK TO 20
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=16,
-        fp16=True,
+        fp16=False,
+        bf16=False,
         eval_strategy="epoch", # val is being used
         save_strategy="epoch",
         save_total_limit=3,
