@@ -8,7 +8,7 @@ fp_paths = []
 fn_paths = []
 
 
-def save_misclassified_images(model, dataset, fire_index, no_fire_index):
+def save_misclassified_images(model, dataset, output_dir, fire_index, no_fire_index):
     """
     Collect paths of misclassified images (FP and FN).
     """
