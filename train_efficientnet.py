@@ -198,7 +198,7 @@ USE_TORCH_COMPILE = False
 
 ds = load_imagefolder(DATA_PATH)
 
-"""
+
 # =================================================================
 # PRUEBA RÁPIDA CON DATASET REDUCIDO
 # =================================================================
@@ -209,7 +209,7 @@ print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train
 # Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
 ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
 ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
-"""
+
 
 # ---------------------------------------------------------------------
 # MAPEOS DE CLASES

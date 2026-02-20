@@ -89,18 +89,16 @@ def save_misclassified_images(model, processor, dataset, output_dir, fire_index,
                 else os.path.basename(image_path).replace(".jpg", f"_true-{true_label}_pred-{pred_label}.jpg")
             )
 
-            #if true_label == 0 and pred_label == 1:
+            path_for_gradcam = image_path if image_path is not None else save_path
+
             if true_label == no_fire_index and pred_label == fire_index:
-                save_path = os.path.join(fp_dir, filename)
                 image.save(save_path)
-                fp_paths.append(save_path)
+                fp_paths.append(path_for_gradcam)
                 fp_count += 1
 
-            #elif true_label == 1 and pred_label == 0:
             elif true_label == fire_index and pred_label == no_fire_index:
-                save_path = os.path.join(fn_dir, filename)
                 image.save(save_path)
-                fn_paths.append(save_path)
+                fn_paths.append(path_for_gradcam)
                 fn_count += 1
 
     print(f"✔ Errors found: {fp_count + fn_count}")
