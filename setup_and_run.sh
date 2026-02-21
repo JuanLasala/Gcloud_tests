@@ -3,7 +3,6 @@ set -euo pipefail
 
 TEST_RUN=false
 RESUME_RUN_DIR=""
-DEFAULT_RESUME_RUN_DIR="resultados_efficientnet/efficientnet_run_2026-02-20_17-47-32/"
 for arg in "$@"; do
     case "$arg" in
         --test-run)
@@ -14,11 +13,6 @@ for arg in "$@"; do
             ;;
     esac
 done
-
-# Si no se pasa --resume-run-dir, usar run por defecto
-if [ -z "$RESUME_RUN_DIR" ]; then
-    RESUME_RUN_DIR="$DEFAULT_RESUME_RUN_DIR"
-fi
 
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
@@ -153,11 +147,8 @@ TRAIN_CMD=(python train_efficientnet.py)
 if [ -n "$RESUME_RUN_DIR" ]; then
     echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
     TRAIN_CMD+=(--resume_from "$RESUME_RUN_DIR" --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS")
-elif ls -d resultados_efficientnet/efficientnet_run_* >/dev/null 2>&1; then
-    echo "Run previo detectado: reanudando último run hasta total de ${RESUME_TOTAL_EPOCHS} epochs"
-    TRAIN_CMD+=(--auto_resume_last --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS")
 else
-    echo "No hay runs previos: iniciando entrenamiento desde cero"
+    echo "Iniciando entrenamiento desde cero (nuevo run por defecto)"
 fi
 
 if [ "$TEST_RUN" = true ]; then
