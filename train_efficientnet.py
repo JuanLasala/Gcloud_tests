@@ -90,15 +90,22 @@ def find_latest_checkpoint(path):
     if not os.path.isdir(path):
         return None
 
-    direct_trainer_checkpoint_files = {
-        "model.safetensors",
-        "optimizer.pt",
-        "scheduler.pt",
-        "trainer_state.json",
-        "training_args.bin",
-    }
+    def is_resumeable_checkpoint(checkpoint_path):
+        required_files = {
+            "trainer_state.json",
+            "optimizer.pt",
+        }
+        has_required = all(
+            os.path.isfile(os.path.join(checkpoint_path, file_name))
+            for file_name in required_files
+        )
+        has_model_weights = (
+            os.path.isfile(os.path.join(checkpoint_path, "model.safetensors"))
+            or os.path.isfile(os.path.join(checkpoint_path, "pytorch_model.bin"))
+        )
+        return has_required and has_model_weights
 
-    if direct_trainer_checkpoint_files.issubset(set(os.listdir(path))):
+    if is_resumeable_checkpoint(path):
         return path
 
     checkpoints = []
@@ -107,6 +114,8 @@ def find_latest_checkpoint(path):
             continue
         checkpoint_path = os.path.join(path, entry)
         if not os.path.isdir(checkpoint_path):
+            continue
+        if not is_resumeable_checkpoint(checkpoint_path):
             continue
         step_str = entry.replace("checkpoint-", "")
         if step_str.isdigit():
@@ -185,7 +194,8 @@ if resume_source:
     if RESUME_CHECKPOINT is None:
         raise ValueError(
             f"No valid checkpoint found in '{resume_source}'. "
-            "Pass a checkpoint dir or a run dir containing checkpoint-* folders."
+            "Pass a checkpoint dir or a run dir containing checkpoint-* folders with "
+            "at least model weights, optimizer.pt, and trainer_state.json."
         )
 
 print(f"\n=== Entrenamiento EfficientNet-V2 ===")
