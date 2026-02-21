@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 TEST_RUN=false
 RESUME_RUN_DIR=""
@@ -164,7 +164,7 @@ if [ "$TEST_RUN" = true ]; then
     echo "Modo test-run activado: usando subconjunto reducido del dataset"
     TRAIN_CMD+=(--test-run)
 fi
-"${TRAIN_CMD[@]}" &> training_log.txt # stderr y stdout a training_log.txt
+"${TRAIN_CMD[@]}" 2>&1 | tee training_log.txt # muestra en terminal y guarda en archivo
 
 echo "=========================="
 echo " Entrenamiento finalizado "
