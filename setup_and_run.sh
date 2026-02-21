@@ -2,13 +2,23 @@
 set -e
 
 TEST_RUN=false
+RESUME_RUN_DIR=""
+DEFAULT_RESUME_RUN_DIR="resultados_efficientnet/efficientnet_run_2026-02-20_17-47-32/"
 for arg in "$@"; do
     case "$arg" in
         --test-run)
             TEST_RUN=true
             ;;
+        --resume-run-dir=*)
+            RESUME_RUN_DIR="${arg#*=}"
+            ;;
     esac
 done
+
+# Si no se pasa --resume-run-dir, usar run por defecto
+if [ -z "$RESUME_RUN_DIR" ]; then
+    RESUME_RUN_DIR="$DEFAULT_RESUME_RUN_DIR"
+fi
 
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
@@ -138,17 +148,18 @@ echo "=========================="
 #python train_vit.py
 RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
 
-
-#### DESCOMENTAR ESTE BLOQUE ####
-#if ls -d resultados_efficientnet/efficientnet_run_* >/dev/null 2>&1; then
- #   echo "Run previo detectado: reanudando último run hasta total de ${RESUME_TOTAL_EPOCHS} epochs"
-  #  python train_efficientnet.py --auto_resume_last --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS" &> training_log.txt
-#else
- #   echo "No hay runs previos: iniciando entrenamiento desde cero"
-  #  python train_efficientnet.py &> training_log.txt # stderr y stdout a training_log.txt
-#fi
-#### DESCOMENTAR ESTE BLOQUE ####
 TRAIN_CMD=(python train_efficientnet.py)
+
+if [ -n "$RESUME_RUN_DIR" ]; then
+    echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
+    TRAIN_CMD+=(--resume_from "$RESUME_RUN_DIR" --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS")
+elif ls -d resultados_efficientnet/efficientnet_run_* >/dev/null 2>&1; then
+    echo "Run previo detectado: reanudando último run hasta total de ${RESUME_TOTAL_EPOCHS} epochs"
+    TRAIN_CMD+=(--auto_resume_last --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS")
+else
+    echo "No hay runs previos: iniciando entrenamiento desde cero"
+fi
+
 if [ "$TEST_RUN" = true ]; then
     echo "Modo test-run activado: usando subconjunto reducido del dataset"
     TRAIN_CMD+=(--test-run)
