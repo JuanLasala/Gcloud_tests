@@ -209,7 +209,7 @@ if RESUME_CHECKPOINT:
 # ---------------------------------------------------------------------
 
 DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
-TARGET_CHANNELS = 12
+TARGET_CHANNELS = 6
 USE_TORCH_COMPILE = False
 
 ds = load_imagefolder(DATA_PATH)

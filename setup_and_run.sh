@@ -127,6 +127,7 @@ if [ -d "train" ] && [ -d "test" ] && [ -d 'validation' ]; then
 else
     echo "Dataset not found. Downloading from GCS..."
     #gsutil -m rsync -r gs://fire_model_dataset/ .
+    #gsutil -m rsync -r gs://fire_dataset_2/ .
 fi
 
 echo "Dataset copiado a: $SCRIPT_DIR"
