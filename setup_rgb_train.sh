@@ -17,6 +17,8 @@ done
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
 
+#Change branch
+git checkout v2_second
 
 echo "=========================="
 echo " [NOTA] Ejecutando SETUP desde: $SCRIPT_DIR"
@@ -124,8 +126,7 @@ if [ -d "train" ] && [ -d "test" ] && [ -d 'validation' ]; then
     echo "Dataset already present (train, test, val found). Skipping download."
 else
     echo "Dataset not found. Downloading from GCS..."
-    #gsutil -m rsync -r gs://fire_model_dataset/ .
-    #gsutil -m rsync -r gs://fire_dataset_2/ .
+    #gsutil -m rsync -r gs://training_data_v1_new/dataset/ .
 fi
 
 echo "Dataset copiado a: $SCRIPT_DIR"
@@ -141,7 +142,7 @@ echo "=========================="
 #python train_vit.py
 RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
 
-TRAIN_CMD=(python train_vit.py)
+TRAIN_CMD=(python train_efficientnet_rgb.py)
 
 if [ -n "$RESUME_RUN_DIR" ]; then
     echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"

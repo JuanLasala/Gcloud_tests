@@ -1,33 +1,42 @@
 import os
-import torch
+import argparse
 from datetime import datetime
 
-from data.dataset_loader import load_imagefolder
-from data.augmentations import train_augmentations
-from data.collators import ImageCollator
+from torchvision.transforms import v2
+from torchvision.transforms import InterpolationMode
+from transformers import Trainer, EarlyStoppingCallback
 
-from models.vit_factory import build_vit
+from data.dataset_loader import load_imagefolder
+from data.multiband_tiff import load_multiband_tiff
+from data.collators_efficientnet import EfficientNetCollator
+from models.model_loader import load_hf_model
 from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
-
+from utils.efficientnet_helpers import build_multiband_transforms, apply_effnet_transforms
 from utils.save_errors import save_misclassified_images
-from utils.grad_cam_vit import create_gradcam_for_misclassified
 from utils.loss_plotter import plot_learning_curves
 from utils.plots import plot_confusion, save_classification_report
 
-from transformers import Trainer, EarlyStoppingCallback
-import torch.nn.functional as F
+
+MODEL_NAME = "google/vit-base-patch16-224-in21k"
+RESULTS_BASE = "./resultados_vit"
+DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
+TARGET_CHANNELS = 6
 
 
-# ==========================================
-# CARGAR DATASET
-# ==========================================
-DATA_PATH = "/home/jlasala/ViT tests"
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train ViT with multiband TIFF preprocessing.")
+    parser.add_argument(
+        "--test-run",
+        action="store_true",
+        help="Run a quick test with reduced train/validation subsets.",
+    )
+    return parser.parse_args()
+
+
+args = parse_args()
 ds = load_imagefolder(DATA_PATH)
 
-# ==========================================
-# CREAR MODELO VIT + PROCESSOR
-# ==========================================
 labels = ds["train"].features["label"].names # nombres de las clases en el orden del dataset
 print("labels (dataset order):", labels)
 
@@ -37,41 +46,42 @@ label2id = {label: i for i, label in enumerate(labels)} # Mapeo LABEL A ID ({"Fi
 fire_index = labels.index("Fire")
 no_fire_index = labels.index("No_Fire")
 
-model, processor = build_vit(
-    "google/vit-base-patch16-224-in21k",
-    num_labels=len(labels), # número de clases
+if args.test_run:
+    num_samples = 100
+    num_val_samples = 20
+    print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {num_samples} train y {num_val_samples} val !!!")
+    ds["train"] = ds["train"].shuffle(seed=42).select(range(num_samples))
+    ds["validation"] = ds["validation"].shuffle(seed=42).select(range(num_val_samples))
+
+model, processor = load_hf_model(
+    MODEL_NAME,
+    num_labels=len(labels),
     id2label=id2label,
-    label2id=label2id
+    label2id=label2id,
+    in_channels=TARGET_CHANNELS,
 )
 
-# ==========================================
-# TRANSFORMS (SE USAN CON .WITH_TRANSFORM)
-# ==========================================
-def train_transform(batch):
-    images = [train_augmentations(img.convert("RGB")) for img in batch["image"]]
-    inputs = processor(images, return_tensors="pt")
-    inputs["labels"] = batch["label"]
-    return inputs
+train_augmentations_multiband_vit = v2.Compose([
+    v2.RandomHorizontalFlip(),
+    v2.RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
+    v2.RandomRotation(degrees=15, interpolation=InterpolationMode.BILINEAR, fill=0),
+])
 
-def eval_transform(batch):
-    images = [img.convert("RGB") for img in batch["image"]]
-    inputs = processor(images, return_tensors="pt")
-    inputs["labels"] = batch["label"]
-    return inputs
+eval_augmentations_multiband_vit = v2.Compose([
+    v2.Resize((224, 224), interpolation=InterpolationMode.BILINEAR, antialias=True),
+])
 
-ds_transf = {
-    "train": ds["train"].with_transform(train_transform),
-    "val": ds["val"].with_transform(eval_transform),
-    "test": ds["test"].with_transform(eval_transform),
-}
-
-# ==========================================
-# TRAINER
-# ==========================================
-
+train_transform_vit, eval_transform_vit = build_multiband_transforms(
+    TARGET_CHANNELS,
+    train_augmentations_multiband_vit,
+    eval_augmentations_multiband_vit,
+    load_multiband_tiff,
+)
+ds_transf = apply_effnet_transforms(ds, train_transform_vit, eval_transform_vit)
 
 run_name = datetime.now().strftime("vit_run_%Y-%m-%d_%H-%M-%S")
-output_dir = f"./resultados_vit/{run_name}"
+output_dir = os.path.join(RESULTS_BASE, run_name)
+os.makedirs(output_dir, exist_ok=True)
 
 training_args = get_training_args(output_dir)
 
@@ -79,8 +89,8 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=ds_transf["train"],
-    eval_dataset=ds_transf["val"],
-    data_collator=ImageCollator(),
+    eval_dataset=ds_transf["validation"],
+    data_collator=EfficientNetCollator(processor=None),
     compute_metrics=compute_metrics,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=8)],
 )
@@ -89,29 +99,25 @@ trainer = Trainer(
 # ENTRENAR
 # ==========================================
 train_results = trainer.train()
-trainer.save_model()
+trainer.save_model(os.path.join(output_dir, "best_model"))
 
 # ==========================================
 # EVALUAR
 # ==========================================
-metrics = trainer.evaluate(ds_transf["val"])
+metrics = trainer.evaluate(ds_transf["validation"])
 trainer.save_metrics("eval", metrics)
 
 # ==========================================
 # GUARDAR IMÁGENES MAL CLASIFICADAS
 # ==========================================
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds["val"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
-)
-
-create_gradcam_for_misclassified(
-    model, processor, fp_paths, fn_paths, output_dir=f"{output_dir}/misclassified"
+    model, ds["validation"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
 )
 
 # ==========================================
 # PLOTS
 # ==========================================
-preds = trainer.predict(ds_transf["val"])
+preds = trainer.predict(ds_transf["validation"])
 y_pred = preds.predictions.argmax(axis=1)
 y_true = preds.label_ids
 
