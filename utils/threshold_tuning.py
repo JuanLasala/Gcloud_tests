@@ -11,7 +11,7 @@ def find_optimal_threshold(
     metric: str = "f1",
     beta: float = 2.0,
     min_recall: float = None,  # <-- optional constraint for deployment
-) -> Tuple[float, Dict]:
+) -> Tuple[float, dict]:
 
     # Stable softmax
     probs = softmax(logits, axis=1)

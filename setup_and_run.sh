@@ -158,6 +158,15 @@ if [ "$TEST_RUN" = true ]; then
 fi
 "${TRAIN_CMD[@]}" 2>&1 | tee training_log.txt # muestra en terminal y guarda en archivo
 
+# Copiar log al directorio real del run (detectado desde la salida de entrenamiento)
+RUN_DIR_FROM_LOG=$(grep -oP 'Guardando resultados en:\s*\K.*' training_log.txt | tail -n1 | sed 's/[[:space:]]*$//')
+if [ -n "${RUN_DIR_FROM_LOG:-}" ] && [ -d "$RUN_DIR_FROM_LOG" ]; then
+    cp training_log.txt "$RUN_DIR_FROM_LOG/training_log.txt"
+    echo "Log copiado a: $RUN_DIR_FROM_LOG/training_log.txt"
+else
+    echo "[WARN] No se pudo detectar un run_dir válido desde training_log.txt; log quedó en $SCRIPT_DIR/training_log.txt"
+fi
+
 echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
