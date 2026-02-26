@@ -12,3 +12,4 @@ imagecodecs
 numpy
 opencv-python
 statsmodels
+scipy>=1.10.0

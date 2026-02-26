@@ -18,7 +18,7 @@ done
 SCRIPT_DIR=$(pwd)
 
 #Change branch
-git checkout v2
+git checkout v2_second
 
 echo "=========================="
 echo " [NOTA] Ejecutando SETUP desde: $SCRIPT_DIR"
