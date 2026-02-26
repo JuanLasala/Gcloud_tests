@@ -101,7 +101,15 @@ echo "=========================="
 
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
-gsutil -m rsync -r gs://training_data_v1_new/dataset/ .
+
+# Check if required dataset folders exist
+if [ -d "train" ] && [ -d "test" ] && [ -d 'val' ]; then
+    echo "Dataset already present (train, test, val found). Skipping download."
+else
+    echo "Dataset not found. Downloading from GCS..."
+    #gsutil -m rsync -r gs://fire_model_dataset/ .
+    #gsutil -m rsync -r gs://fire_dataset_2/ .
+fi
 
 echo "Dataset copiado a: $SCRIPT_DIR"
 
@@ -114,8 +122,34 @@ echo " 5) Ejecutando entrenamiento "
 echo "=========================="
 
 #python train_vit.py
-python train_efficientnet.py
+RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
+
+TRAIN_CMD=(python train_efficientnet.py)
+
+if [ -n "$RESUME_RUN_DIR" ]; then
+    echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
+    TRAIN_CMD+=(--resume_from "$RESUME_RUN_DIR" --resume_to_total_epochs "$RESUME_TOTAL_EPOCHS")
+else
+    echo "Iniciando entrenamiento desde cero (nuevo run por defecto)"
+fi
+
+if [ "$TEST_RUN" = true ]; then
+    echo "Modo test-run activado: usando subconjunto reducido del dataset"
+    TRAIN_CMD+=(--test-run)
+fi
+"${TRAIN_CMD[@]}" 2>&1 | tee training_log.txt # muestra en terminal y guarda en archivo
+
+# Copiar log al directorio real del run (detectado desde la salida de entrenamiento)
+RUN_DIR_FROM_LOG=$(grep -oP 'Guardando resultados en:\s*\K.*' training_log.txt | tail -n1 | sed 's/[[:space:]]*$//')
+if [ -n "${RUN_DIR_FROM_LOG:-}" ] && [ -d "$RUN_DIR_FROM_LOG" ]; then
+    cp training_log.txt "$RUN_DIR_FROM_LOG/training_log.txt"
+    echo "Log copiado a: $RUN_DIR_FROM_LOG/training_log.txt"
+else
+    echo "[WARN] No se pudo detectar un run_dir válido desde training_log.txt; log quedó en $SCRIPT_DIR/training_log.txt"
+fi
 
 echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
+
+sudo shutdown -h now
