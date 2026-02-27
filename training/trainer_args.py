@@ -1,6 +1,6 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-5, epochs=20):
+def get_training_args(output_dir, lr=1e-4, epochs=30): #3e-5, 25 epochs
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=16,
@@ -13,6 +13,7 @@ def get_training_args(output_dir, lr=3e-5, epochs=20):
         logging_strategy="steps",
         logging_steps=25,
         learning_rate=lr,
+        lr_scheduler_type = "cosine",
         remove_unused_columns=False,
         load_best_model_at_end=True,
         metric_for_best_model="roc_auc",
