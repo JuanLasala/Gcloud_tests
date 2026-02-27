@@ -67,6 +67,7 @@ def find_optimal_threshold(
         "precision": float(precisions[best_idx]),
         "recall": float(recalls[best_idx]),
         "score": float(scores[best_idx]),  # <-- generalized score
+        "f1": float(scores[best_idx]),  # backward-compatible alias expected by training script
         "true_negatives": int(tn),
         "false_positives": int(fp),
         "false_negatives": int(fn),
