@@ -51,18 +51,6 @@ def _expand_first_conv(model, in_channels):
     _replace_module(model, first_conv_name, new_conv)
 
 
-def adapt_model_input_channels(model, in_channels):
-    if hasattr(model, "config") and hasattr(model.config, "num_channels"):
-        model.config.num_channels = in_channels
-
-    if hasattr(model, "vit") and hasattr(model.vit, "embeddings") and hasattr(model.vit.embeddings, "patch_embeddings"):
-        patch_embeddings = model.vit.embeddings.patch_embeddings
-        if hasattr(patch_embeddings, "num_channels"):
-            patch_embeddings.num_channels = in_channels
-
-    _expand_first_conv(model, in_channels)
-
-
 class TorchvisionEfficientNetForClassification(torch.nn.Module):
     def __init__(self, num_labels, id2label, label2id, in_channels, pretrained=True):
         super().__init__()
@@ -129,5 +117,8 @@ def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=12):
             "Check repo ID and Hugging Face authentication."
         ) from last_error
 
-    adapt_model_input_channels(model, in_channels)
+    if hasattr(model.config, "num_channels"):
+        model.config.num_channels = in_channels
+
+    _expand_first_conv(model, in_channels)
     return model, None

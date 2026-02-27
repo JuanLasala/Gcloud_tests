@@ -18,7 +18,7 @@ from utils.loss_plotter import plot_learning_curves
 from utils.plots import plot_confusion, save_classification_report
 
 
-MODEL_NAME = "google/vit-base-patch16-224-in21k"
+MODEL_NAME = "google/vit-base-patch16-384"
 RESULTS_BASE = "./resultados_vit"
 DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
 TARGET_CHANNELS = 6
@@ -63,12 +63,12 @@ model, processor = load_hf_model(
 
 train_augmentations_multiband_vit = v2.Compose([
     v2.RandomHorizontalFlip(),
-    v2.RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
+    v2.RandomResizedCrop(size=(384, 384), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
     v2.RandomRotation(degrees=15, interpolation=InterpolationMode.BILINEAR, fill=0),
 ])
 
 eval_augmentations_multiband_vit = v2.Compose([
-    v2.Resize((224, 224), interpolation=InterpolationMode.BILINEAR, antialias=True),
+    v2.Resize((384, 384), interpolation=InterpolationMode.BILINEAR, antialias=True),
 ])
 
 train_transform_vit, eval_transform_vit = build_multiband_transforms(
@@ -76,6 +76,7 @@ train_transform_vit, eval_transform_vit = build_multiband_transforms(
     train_augmentations_multiband_vit,
     eval_augmentations_multiband_vit,
     load_multiband_tiff,
+    force_output_size=(384, 384),
 )
 ds_transf = apply_effnet_transforms(ds, train_transform_vit, eval_transform_vit)
 
