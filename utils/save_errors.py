@@ -1,6 +1,6 @@
 import os
-from PIL import Image
 import torch
+import torch.nn.functional as F
 
 from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
 
@@ -8,7 +8,28 @@ fp_paths = []
 fn_paths = []
 
 
-def save_misclassified_images(model, dataset, output_dir, fire_index, no_fire_index):
+def _get_model_target_size(model):
+    image_size = getattr(getattr(model, "config", None), "image_size", None)
+    if image_size is None:
+        return None
+
+    if isinstance(image_size, int):
+        return image_size, image_size
+
+    if isinstance(image_size, (tuple, list)) and len(image_size) == 2:
+        return int(image_size[0]), int(image_size[1])
+
+    return None
+
+
+def save_misclassified_images(
+    model,
+    dataset,
+    output_dir,
+    fire_index,
+    no_fire_index,
+    threshold=None,
+):
     """
     Collect paths of misclassified images (FP and FN)
     and save them to text files.
@@ -24,6 +45,7 @@ def save_misclassified_images(model, dataset, output_dir, fire_index, no_fire_in
 
     model.eval()
     device = next(model.parameters()).device
+    target_size = _get_model_target_size(model)
 
     fp_count = 0
     fn_count = 0
@@ -37,7 +59,21 @@ def save_misclassified_images(model, dataset, output_dir, fire_index, no_fire_in
         # 1) Load multiband image
         # --------------------------
         image_path = item["path"]
-        tensor = load_multiband_tiff(image_path)
+        if "pixel_values" in item:
+            tensor = item["pixel_values"]
+        else:
+            tensor = load_multiband_tiff(image_path)
+
+        if not isinstance(tensor, torch.Tensor):
+            tensor = torch.tensor(tensor)
+
+        if target_size is not None and tensor.shape[-2:] != target_size:
+            tensor = F.interpolate(
+                tensor.unsqueeze(0),
+                size=target_size,
+                mode="bilinear",
+                align_corners=False,
+            ).squeeze(0)
 
         label_key = "label" if "label" in item else "labels"
         true_label = int(item[label_key])
@@ -49,7 +85,13 @@ def save_misclassified_images(model, dataset, output_dir, fire_index, no_fire_in
 
         with torch.no_grad():
             outputs = model(**inputs)
-            pred_label = outputs.logits.argmax(dim=-1).item()
+            logits = outputs.logits
+            if threshold is None:
+                pred_label = logits.argmax(dim=-1).item()
+            else:
+                probs = torch.softmax(logits, dim=-1)
+                fire_prob = probs[0, fire_index].item()
+                pred_label = fire_index if fire_prob >= float(threshold) else no_fire_index
 
         # --------------------------
         # 3) Check error
@@ -84,4 +126,3 @@ def save_misclassified_images(model, dataset, output_dir, fire_index, no_fire_in
     print(f"\nSaved lists in:\n{output_dir}\n")
 
     return fp_count, fn_count, fp_paths, fn_paths
-
