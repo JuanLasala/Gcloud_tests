@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
 
@@ -29,6 +30,8 @@ def save_misclassified_images(
     fire_index,
     no_fire_index,
     threshold=None,
+    pred_labels=None,
+    true_labels=None,
 ):
     """
     Collect paths of misclassified images (FP and FN)
@@ -46,6 +49,17 @@ def save_misclassified_images(
     model.eval()
     device = next(model.parameters()).device
     target_size = _get_model_target_size(model)
+
+    use_precomputed = pred_labels is not None and true_labels is not None
+    if use_precomputed:
+        pred_labels = np.asarray(pred_labels).astype(int)
+        true_labels = np.asarray(true_labels).astype(int)
+        if len(pred_labels) != len(true_labels):
+            raise ValueError("pred_labels and true_labels must have the same length.")
+        if len(pred_labels) != len(dataset):
+            raise ValueError(
+                f"Length mismatch: dataset={len(dataset)}, pred_labels={len(pred_labels)}, true_labels={len(true_labels)}"
+            )
 
     fp_count = 0
     fn_count = 0
@@ -75,23 +89,27 @@ def save_misclassified_images(
                 align_corners=False,
             ).squeeze(0)
 
-        label_key = "label" if "label" in item else "labels"
-        true_label = int(item[label_key])
+        if use_precomputed:
+            true_label = int(true_labels[i])
+            pred_label = int(pred_labels[i])
+        else:
+            label_key = "label" if "label" in item else "labels"
+            true_label = int(item[label_key])
 
-        # --------------------------
-        # 2) Forward pass
-        # --------------------------
-        inputs = {"pixel_values": tensor.unsqueeze(0).to(device)}
+            # --------------------------
+            # 2) Forward pass
+            # --------------------------
+            inputs = {"pixel_values": tensor.unsqueeze(0).to(device)}
 
-        with torch.no_grad():
-            outputs = model(**inputs)
-            logits = outputs.logits
-            if threshold is None:
-                pred_label = logits.argmax(dim=-1).item()
-            else:
-                probs = torch.softmax(logits, dim=-1)
-                fire_prob = probs[0, fire_index].item()
-                pred_label = fire_index if fire_prob >= float(threshold) else no_fire_index
+            with torch.no_grad():
+                outputs = model(**inputs)
+                logits = outputs.logits
+                if threshold is None:
+                    pred_label = logits.argmax(dim=-1).item()
+                else:
+                    probs = torch.softmax(logits, dim=-1)
+                    fire_prob = probs[0, fire_index].item()
+                    pred_label = fire_index if fire_prob >= float(threshold) else no_fire_index
 
         # --------------------------
         # 3) Check error
