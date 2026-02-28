@@ -14,6 +14,7 @@ from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
 from utils.efficientnet_helpers import build_multiband_transforms, apply_effnet_transforms
 from utils.save_errors import save_misclassified_images
+from utils.threshold_tuning import find_optimal_threshold, apply_threshold
 from utils.loss_plotter import plot_learning_curves
 from utils.plots import plot_confusion, save_classification_report
 
@@ -112,8 +113,34 @@ metrics = trainer.evaluate(ds_transf["validation"])
 trainer.save_metrics("eval", metrics)
 
 preds = trainer.predict(ds_transf["validation"])
-y_pred = preds.predictions.argmax(axis=1)
+y_logits = preds.predictions
 y_true = preds.label_ids
+
+print("\n=== Sintonizando umbral (threshold) en validación ===")
+optimal_threshold, threshold_metrics = find_optimal_threshold(
+    y_logits,
+    y_true,
+    fire_index=fire_index,
+    metric="f1_weighted",
+    beta=2.0,
+)
+
+tp = threshold_metrics["true_positives"]
+tn = threshold_metrics["true_negatives"]
+fp = threshold_metrics["false_positives"]
+fn = threshold_metrics["false_negatives"]
+total = tp + tn + fp + fn
+accuracy = (tp + tn) / total if total > 0 else 0.0
+
+print(f"Umbral óptimo: {optimal_threshold:.4f}")
+print(f"  - Precisión: {threshold_metrics['precision']:.4f}")
+print(f"  - Accuracy: {accuracy:.4f}")
+print(f"  - Recall: {threshold_metrics['recall']:.4f}")
+print(f"  - F1: {threshold_metrics['f1']:.4f}")
+print(f"  - TP: {tp}, FP: {fp}")
+print(f"  - FN: {fn}, TN: {tn}\n")
+
+y_pred = apply_threshold(y_logits, fire_index, optimal_threshold)
 
 # ==========================================
 # GUARDAR IMÁGENES MAL CLASIFICADAS
