@@ -4,6 +4,7 @@ from datetime import datetime
 
 from torchvision.transforms import v2
 from torchvision.transforms import InterpolationMode
+from tqdm.auto import tqdm
 from transformers import Trainer, EarlyStoppingCallback
 
 from data.dataset_loader import load_imagefolder
@@ -132,13 +133,13 @@ fn = threshold_metrics["false_negatives"]
 total = tp + tn + fp + fn
 accuracy = (tp + tn) / total if total > 0 else 0.0
 
-print(f"Umbral óptimo: {optimal_threshold:.4f}")
-print(f"  - Precisión: {threshold_metrics['precision']:.4f}")
-print(f"  - Accuracy: {accuracy:.4f}")
-print(f"  - Recall: {threshold_metrics['recall']:.4f}")
-print(f"  - F1: {threshold_metrics['f1']:.4f}")
-print(f"  - TP: {tp}, FP: {fp}")
-print(f"  - FN: {fn}, TN: {tn}\n")
+tqdm.write(f"Umbral óptimo: {optimal_threshold:.4f}")
+tqdm.write(f"  - Precisión: {threshold_metrics['precision']:.4f}")
+tqdm.write(f"  - Accuracy: {accuracy:.4f}")
+tqdm.write(f"  - Recall: {threshold_metrics['recall']:.4f}")
+tqdm.write(f"  - F1: {threshold_metrics['f1']:.4f}")
+tqdm.write(f"  - TP: {tp}, FP: {fp}")
+tqdm.write(f"  - FN: {fn}, TN: {tn}\n")
 
 y_pred = apply_threshold(y_logits, fire_index, optimal_threshold)
 

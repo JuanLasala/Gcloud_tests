@@ -13,6 +13,7 @@ def save_misclassified_images(
     no_fire_index,
     pred_labels,
     true_labels,
+    verbose=True,
 ):
     """
     Collect paths of misclassified images (FP and FN)
@@ -25,7 +26,8 @@ def save_misclassified_images(
     os.makedirs(fp_dir, exist_ok=True)
     os.makedirs(fn_dir, exist_ok=True)
 
-    print("\n>>> Looking for misclassified images...\n")
+    if verbose:
+        print("\n>>> Looking for misclassified images...\n")
 
     pred_labels = np.asarray(pred_labels).astype(int)
     true_labels = np.asarray(true_labels).astype(int)
@@ -76,10 +78,11 @@ def save_misclassified_images(
         for path in fn_paths:
             f.write(path + "\n")
 
-    print(f"✔ Errors found: {fp_count + fn_count}")
-    print(f"   - False Positives: {fp_count}")
-    print(f"   - False Negatives: {fn_count}")
-    print(f"\nSaved lists in:\n{output_dir}\n")
+    if verbose:
+        print(f"✔ Errors found: {fp_count + fn_count}")
+        print(f"   - False Positives: {fp_count}")
+        print(f"   - False Negatives: {fn_count}")
+        print(f"\nSaved lists in:\n{output_dir}\n")
 
     return fp_count, fn_count, fp_paths, fn_paths
 

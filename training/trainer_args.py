@@ -13,7 +13,6 @@ def get_training_args(output_dir, lr=3e-5, epochs=20):
         logging_strategy="steps",
         logging_steps=25,
         learning_rate=lr,
-        disable_tqdm=True,
         remove_unused_columns=False,
         load_best_model_at_end=True,
         metric_for_best_model="roc_auc",
