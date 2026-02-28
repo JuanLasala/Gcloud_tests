@@ -18,7 +18,7 @@ from utils.loss_plotter import plot_learning_curves
 from utils.plots import plot_confusion, save_classification_report
 
 
-MODEL_NAME = "google/vit-base-patch16-384"
+MODEL_NAME = "google/vit-base-patch16-224-in21k"
 RESULTS_BASE = "./resultados_vit"
 DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
 TARGET_CHANNELS = 6
@@ -63,12 +63,12 @@ model, processor = load_hf_model(
 
 train_augmentations_multiband_vit = v2.Compose([
     v2.RandomHorizontalFlip(),
-    v2.RandomResizedCrop(size=(384, 384), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
+    v2.RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
     v2.RandomRotation(degrees=15, interpolation=InterpolationMode.BILINEAR, fill=0),
 ])
 
 eval_augmentations_multiband_vit = v2.Compose([
-    v2.Resize((384, 384), interpolation=InterpolationMode.BILINEAR, antialias=True),
+    v2.Resize((224, 224), interpolation=InterpolationMode.BILINEAR, antialias=True),
 ])
 
 train_transform_vit, eval_transform_vit = build_multiband_transforms(
@@ -76,7 +76,7 @@ train_transform_vit, eval_transform_vit = build_multiband_transforms(
     train_augmentations_multiband_vit,
     eval_augmentations_multiband_vit,
     load_multiband_tiff,
-    force_output_size=(384, 384),
+    force_output_size=(224, 224),
 )
 ds_transf = apply_effnet_transforms(ds, train_transform_vit, eval_transform_vit)
 
@@ -93,7 +93,10 @@ trainer = Trainer(
     eval_dataset=ds_transf["validation"],
     data_collator=EfficientNetCollator(processor=None),
     compute_metrics=compute_metrics,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=8)],
+    callbacks=[EarlyStoppingCallback(
+    early_stopping_patience=5,
+    early_stopping_threshold=0.001,
+)],
 )
 
 # ==========================================
@@ -108,20 +111,26 @@ trainer.save_model(os.path.join(output_dir, "best_model"))
 metrics = trainer.evaluate(ds_transf["validation"])
 trainer.save_metrics("eval", metrics)
 
+preds = trainer.predict(ds_transf["validation"])
+y_pred = preds.predictions.argmax(axis=1)
+y_true = preds.label_ids
+
 # ==========================================
 # GUARDAR IMÁGENES MAL CLASIFICADAS
 # ==========================================
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, ds["validation"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
+    model,
+    ds["validation"],
+    output_dir=f"{output_dir}/misclassified",
+    fire_index=fire_index,
+    no_fire_index=no_fire_index,
+    pred_labels=y_pred,
+    true_labels=y_true,
 )
 
 # ==========================================
 # PLOTS
 # ==========================================
-preds = trainer.predict(ds_transf["validation"])
-y_pred = preds.predictions.argmax(axis=1)
-y_true = preds.label_ids
-
 plot_confusion(y_true, y_pred, labels, output_dir)
 save_classification_report(y_true, y_pred, labels, output_dir)
 plot_learning_curves(trainer.state.log_history, output_dir)

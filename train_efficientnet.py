@@ -378,6 +378,10 @@ print(f"  - FN: {threshold_metrics['false_negatives']}, TN: {threshold_metrics['
 # -------------------------------------------------------------------------
 trainer.save_metrics("eval", metrics)
 
+# Usar exactamente la misma salida de trainer.predict para errores y plots
+y_pred_threshold = apply_threshold(val_logits, fire_index, optimal_threshold)
+y_true = val_labels
+
 # -------------------------------------------------------------------------
 # IMÁGENES MAL CLASIFICADAS
 # -------------------------------------------------------------------------
@@ -387,7 +391,8 @@ fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
     output_dir=f"{RUN_DIR}/misclassified",
     fire_index=fire_index,
     no_fire_index=no_fire_index,
-    threshold=optimal_threshold,
+    pred_labels=y_pred_threshold,
+    true_labels=y_true,
 )
 
 create_gradcam_for_misclassified(
@@ -398,8 +403,6 @@ create_gradcam_for_misclassified(
 # PLOTS
 # -------------------------------------------------------------------------
 # Usar predicciones con umbral óptimo en lugar de argmax
-y_pred_threshold = apply_threshold(val_logits, fire_index, optimal_threshold)
-y_true = val_labels
 plot_confusion(y_true, y_pred_threshold, labels, RUN_DIR)
 print('confusion done')
 save_classification_report(y_true, y_pred_threshold, labels, RUN_DIR)

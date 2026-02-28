@@ -22,7 +22,7 @@ def get_training_args(output_dir, lr=3e-5, epochs=20):
         dataloader_pin_memory=True,
         dataloader_persistent_workers=False,
         dataloader_prefetch_factor=1,
-        warmup_ratio=0.1,
+        warmup_ratio = 0.05,
         weight_decay=0.01,
         #label_smoothing_factor=0.1,
     )

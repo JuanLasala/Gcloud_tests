@@ -8,7 +8,7 @@ def find_optimal_threshold(
     logits: np.ndarray,
     labels: np.ndarray,
     fire_index: int,
-    metric: str = "f1",
+    metric: str = "f1_weighted",
     beta: float = 2.0,
     min_recall: float = None,  # <-- optional constraint for deployment
 ) -> Tuple[float, dict]:
@@ -67,6 +67,7 @@ def find_optimal_threshold(
         "precision": float(precisions[best_idx]),
         "recall": float(recalls[best_idx]),
         "score": float(scores[best_idx]),  # <-- generalized score
+        "f1": float(scores[best_idx]),
         "true_negatives": int(tn),
         "false_positives": int(fp),
         "false_negatives": int(fn),
