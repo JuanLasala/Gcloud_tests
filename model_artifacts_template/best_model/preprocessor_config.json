@@ -1,0 +1,7 @@
+{
+  "processor_class": "CustomMultibandPreprocessor",
+  "model_name": "torchvision/efficientnet_v2_s",
+  "num_channels": 6,
+  "image_size": 380,
+  "note": "This pipeline uses custom torchvision transforms (RandomResizedCrop/Resize to 380x380) instead of a Hugging Face processor object."
+}

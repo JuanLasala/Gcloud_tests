@@ -101,6 +101,42 @@ Common parameters to change
 - `data/augmentations.py`: input size, crop, flips, color jitter, etc.
 - `train_efficientnet.py`: `TARGET_CHANNELS` for multiband inputs (default 13).
 
+## Inference (directory and single image)
+
+Use `predict_directory_effnet.py` to run inference from a trained model package (`best_model/` with weights and config files).
+
+- Supported model path inputs:
+  - run directory containing `best_model/`
+  - direct `best_model/` directory
+  - direct weights file (`model.safetensors` or `pytorch_model.bin`)
+
+- Input options (choose one):
+  - `--input_dir` for recursive batch inference over TIFF files
+  - `--input_file` for a single TIFF image
+
+Examples:
+
+```bash
+# Batch inference over a directory
+python predict_directory_effnet.py \
+  --model_path ./model_artifacts_template \
+  --input_dir /path/to/tiff_folder \
+  --output_csv ./predictions/preds_batch.csv
+
+# Single-image inference
+python predict_directory_effnet.py \
+  --model_path ./model_artifacts_template \
+  --input_file /path/to/image.tif \
+  --output_csv ./predictions/preds_single.csv
+```
+
+Optional flags:
+
+- `--threshold 0.42` to force a custom decision threshold
+- `--threshold_json /path/to/optimal_threshold.json` to load threshold automatically
+- `--labels Fire,No_Fire` if labels are not present in `config.json`
+- `--target_channels 6` / `--model_name torchvision/efficientnet_v2_s` to override config values
+
 ## Automated setup and run script
 
 This repository includes a convenience script `setup_and_run.sh` that automates common setup tasks and launches training. Summary:

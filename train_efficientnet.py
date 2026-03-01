@@ -64,6 +64,32 @@ def parse_args():
         action="store_true",
         help="Run a quick test with reduced train/validation subsets.",
     )
+    parser.add_argument(
+        "--generate_config_only",
+        action="store_true",
+        help=(
+            "Generate config.json and preprocessor_config.json in best_model directory and exit "
+            "without loading model weights or running training."
+        ),
+    )
+    parser.add_argument(
+        "--config_output_dir",
+        type=str,
+        default=None,
+        help=(
+            "Optional output directory for generated config artifacts. "
+            "If omitted, uses <run_dir>/best_model."
+        ),
+    )
+    parser.add_argument(
+        "--labels_csv",
+        type=str,
+        default=None,
+        help=(
+            "Optional comma-separated labels in class-index order (e.g. 'Fire,No_Fire'). "
+            "If omitted, labels are read from dataset."
+        ),
+    )
     epochs_group = parser.add_mutually_exclusive_group()
     epochs_group.add_argument(
         "--resume_additional_epochs",
@@ -161,6 +187,76 @@ def read_checkpoint_progress(checkpoint_dir):
     return epoch_value, step_value
 
 
+def parse_labels_csv(labels_csv):
+    labels = [label.strip() for label in labels_csv.split(",") if label.strip()]
+    if len(labels) < 2:
+        raise ValueError("--labels_csv must include at least two labels (e.g. 'Fire,No_Fire').")
+    return labels
+
+
+def ensure_inference_artifacts(best_model_dir, model, processor, model_name, target_channels, id2label, label2id):
+    os.makedirs(best_model_dir, exist_ok=True)
+
+    config_path = os.path.join(best_model_dir, "config.json")
+    if not os.path.isfile(config_path):
+        model_config = getattr(model, "config", None) if model is not None else None
+        if model is not None:
+            architecture_name = model.__class__.__name__
+        elif model_name == "torchvision/efficientnet_v2_s":
+            architecture_name = "TorchvisionEfficientNetForClassification"
+        else:
+            architecture_name = "AutoModelForImageClassification"
+
+        config_payload = {
+            "model_type": "efficientnet",
+            "architectures": [architecture_name],
+            "model_name": model_name,
+            "num_labels": int(len(id2label)),
+            "id2label": {str(index): str(label) for index, label in id2label.items()},
+            "label2id": {str(label): int(index) for label, index in label2id.items()},
+            "num_channels": int(target_channels),
+            "problem_type": "single_label_classification",
+        }
+
+        if model_config is not None:
+            for key in ["model_type", "num_labels", "num_channels"]:
+                value = getattr(model_config, key, None)
+                if value is not None:
+                    config_payload[key] = value
+
+            cfg_id2label = getattr(model_config, "id2label", None)
+            if isinstance(cfg_id2label, dict) and cfg_id2label:
+                config_payload["id2label"] = {
+                    str(index): str(label) for index, label in cfg_id2label.items()
+                }
+
+            cfg_label2id = getattr(model_config, "label2id", None)
+            if isinstance(cfg_label2id, dict) and cfg_label2id:
+                config_payload["label2id"] = {
+                    str(label): int(index) for label, index in cfg_label2id.items()
+                }
+
+        with open(config_path, "w") as config_handle:
+            json.dump(config_payload, config_handle, indent=2)
+        print(f"Config guardado en: {config_path}")
+
+    preprocessor_config_path = os.path.join(best_model_dir, "preprocessor_config.json")
+    if not os.path.isfile(preprocessor_config_path):
+        if processor is not None and hasattr(processor, "save_pretrained"):
+            processor.save_pretrained(best_model_dir)
+            print(f"Preprocessor guardado en: {preprocessor_config_path}")
+        else:
+            preprocessor_payload = {
+                "processor_class": "CustomMultibandPreprocessor",
+                "model_name": model_name,
+                "num_channels": int(target_channels),
+                "note": "This pipeline uses custom torchvision transforms instead of a HF processor.",
+            }
+            with open(preprocessor_config_path, "w") as preprocessor_handle:
+                json.dump(preprocessor_payload, preprocessor_handle, indent=2)
+            print(f"Preprocessor config guardado en: {preprocessor_config_path}")
+
+
 args = parse_args()
 
 resume_source = args.resume_from
@@ -212,13 +308,17 @@ DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
 TARGET_CHANNELS = 6
 USE_TORCH_COMPILE = False
 
-ds = load_imagefolder(DATA_PATH)
+if args.labels_csv:
+    labels = parse_labels_csv(args.labels_csv)
+    ds = None
+else:
+    ds = load_imagefolder(DATA_PATH)
 
 
 # =================================================================
 # PRUEBA RÁPIDA CON DATASET REDUCIDO
 # =================================================================
-if args.test_run:
+if args.test_run and ds is not None:
     NUM_SAMPLES = 100
     NUM_VAL_SAMPLES = 20
     print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train y {NUM_VAL_SAMPLES} val !!!")
@@ -231,7 +331,8 @@ if args.test_run:
 # ---------------------------------------------------------------------
 # MAPEOS DE CLASES
 # ---------------------------------------------------------------------
-labels = ds["train"].features["label"].names # nombres de las clases en el orden del dataset
+if ds is not None:
+    labels = ds["train"].features["label"].names # nombres de las clases en el orden del dataset
 print("labels (dataset order):", labels)
 
 id2label = {i: label for i, label in enumerate(labels)} # mapeo id a label ({0: 'Fire', 1: 'No_Fire'})
@@ -239,6 +340,24 @@ label2id = {label: i for i, label in enumerate(labels)} # mapeo label a id ({"Fi
 
 print("id2label:", id2label)
 print("label2id:", label2id)
+
+if args.generate_config_only:
+    if args.config_output_dir:
+        best_model_dir = os.path.abspath(args.config_output_dir)
+    else:
+        best_model_dir = os.path.join(RUN_DIR, "best_model")
+
+    ensure_inference_artifacts(
+        best_model_dir=best_model_dir,
+        model=None,
+        processor=None,
+        model_name=MODEL_NAME,
+        target_channels=TARGET_CHANNELS,
+        id2label=id2label,
+        label2id=label2id,
+    )
+    print(f"Config-only mode completado. Artefactos generados en: {best_model_dir}")
+    raise SystemExit(0)
 
 fire_index = labels.index("Fire")
 no_fire_index = labels.index("No_Fire")
@@ -342,7 +461,17 @@ if RESUME_CHECKPOINT:
     train_output = trainer.train(resume_from_checkpoint=RESUME_CHECKPOINT)
 else:
     train_output = trainer.train()
-trainer.save_model(os.path.join(RUN_DIR, "best_model"))
+best_model_dir = os.path.join(RUN_DIR, "best_model")
+trainer.save_model(best_model_dir)
+ensure_inference_artifacts(
+    best_model_dir=best_model_dir,
+    model=model,
+    processor=processor,
+    model_name=MODEL_NAME,
+    target_channels=TARGET_CHANNELS,
+    id2label=id2label,
+    label2id=label2id,
+)
 
 # Curva de pérdidas
 plot_learning_curves(trainer.state.log_history, RUN_DIR)
@@ -418,7 +547,6 @@ print('learning curves done')
 # -------------------------------------------------------------------------
 # GUARDAR UMBRAL ÓPTIMO
 # -------------------------------------------------------------------------
-import json
 threshold_info = {
     "optimal_threshold": float(optimal_threshold),
     "fire_index": int(fire_index),
