@@ -447,8 +447,8 @@ trainer = Trainer(
     compute_metrics=compute_metrics,
     processing_class=processor,
     callbacks=[EarlyStoppingCallback(
-        early_stopping_patience=6,
-        early_stopping_threshold=0.0005,)]
+        early_stopping_patience=8,
+        early_stopping_threshold=0.001,)]
 )
 
 # ---------------------------------------------------------------------
