@@ -121,16 +121,18 @@ echo "=========================="
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
 
+DATASET_DIR="$SCRIPT_DIR/dataset"
+
 # Check if required dataset folders exist
-if [ -d "train" ] && [ -d "test" ] && [ -d 'validation' ]; then
+if [ -d "$DATASET_DIR/train" ] && [ -d "$DATASET_DIR/test" ] && [ -d "$DATASET_DIR/validation" ]; then
     echo "Dataset already present (train, test, val found). Skipping download."
 else
     echo "Dataset not found. Downloading from GCS..."
-    #gsutil -m rsync -r gs://fire_model_dataset/ .
-    gsutil -m rsync -r gs://fire_dataset_3/ .
+    #gsutil -m rsync -r gs://fire_model_dataset/ "$DATASET_DIR"
+    gsutil -m rsync -r gs://fire_dataset_3/ "$DATASET_DIR"
 fi
 
-echo "Dataset copiado a: $SCRIPT_DIR"
+echo "Dataset copiado a: $DATASET_DIR"
 
 # --------------------------------------------------------------------------
 # Bloque 5: Ejecución
