@@ -3,6 +3,8 @@ import argparse
 import json
 import torch
 from datetime import datetime
+from PIL import Image
+from torchvision.transforms import functional as tvf
 from transformers import Trainer
 from transformers import EarlyStoppingCallback
 
@@ -63,6 +65,11 @@ def parse_args():
         "--test-run",
         action="store_true",
         help="Run a quick test with reduced train/validation subsets.",
+    )
+    parser.add_argument(
+        "--rgb",
+        action="store_true",
+        help="Use RGB mode (3 channels) instead of multiband mode.",
     )
     parser.add_argument(
         "--generate_config_only",
@@ -194,6 +201,15 @@ def parse_labels_csv(labels_csv):
     return labels
 
 
+def load_image_tensor(path: str, rgb_mode: bool) -> torch.Tensor:
+    if not rgb_mode:
+        return load_multiband_tiff(path)
+
+    with Image.open(path) as pil_img:
+        pil_img = pil_img.convert("RGB")
+        return tvf.pil_to_tensor(pil_img).float() / 255.0
+
+
 def ensure_inference_artifacts(best_model_dir, model, processor, model_name, target_channels, id2label, label2id):
     os.makedirs(best_model_dir, exist_ok=True)
 
@@ -304,9 +320,16 @@ if RESUME_CHECKPOINT:
 # CARGA DEL DATASET
 # ---------------------------------------------------------------------
 
-DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
-TARGET_CHANNELS = 6
+if args.rgb:
+    DATA_PATH = "/srv/train_project/Gcloud_tests/dataset_rgb"
+    TARGET_CHANNELS = 3
+else:
+    DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
+    TARGET_CHANNELS = 6
+
 USE_TORCH_COMPILE = False
+
+print(f"Modo {'RGB' if args.rgb else 'multibanda'} activado. DATA_PATH={DATA_PATH}, canales={TARGET_CHANNELS}")
 
 if args.labels_csv:
     labels = parse_labels_csv(args.labels_csv)
@@ -372,12 +395,13 @@ model, processor = load_hf_model(
     id2label=id2label,
     label2id=label2id,
     in_channels=TARGET_CHANNELS,
+    use_rgb=args.rgb,
 )
 #if USE_TORCH_COMPILE and hasattr(torch, "compile"): # // DISABLE TORCH.COMPILE FOR NOW
     #model = torch.compile(model, mode="reduce-overhead")
 
-sample = load_multiband_tiff(ds['validation'][0]["path"])
-print("Sample multiband shape:", sample.shape)
+sample = load_image_tensor(ds['validation'][0]["path"], args.rgb)
+print("Sample tensor shape:", sample.shape)
 
 # ---------------------------------------------------------------------
 # COLLATOR (procesamiento por batch)
@@ -393,7 +417,7 @@ train_transform_effnet, eval_transform_effnet = build_multiband_transforms(
     TARGET_CHANNELS,
     train_augmentations_multiband,
     eval_augmentations_multiband,
-    load_multiband_tiff,
+    lambda p: load_image_tensor(p, args.rgb),
 )
 ds = apply_effnet_transforms(ds, train_transform_effnet, eval_transform_effnet)
 # ---------------------------------------------------------------------

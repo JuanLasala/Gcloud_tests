@@ -2,11 +2,15 @@
 set -euo pipefail
 
 TEST_RUN=false
+RGB_RUN=false
 RESUME_RUN_DIR=""
 for arg in "$@"; do
     case "$arg" in
         --test-run)
             TEST_RUN=true
+            ;;
+        --rgb)
+            RGB_RUN=true
             ;;
         --resume-run-dir=*)
             RESUME_RUN_DIR="${arg#*=}"
@@ -121,7 +125,13 @@ echo "=========================="
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
 
-DATASET_DIR="$SCRIPT_DIR/dataset"
+if [ "$RGB_RUN" = true ]; then
+    DATASET_DIR="$SCRIPT_DIR/dataset_rgb"
+    DATASET_BUCKET="gs://new_rgb_dataset/dataset"
+else
+    DATASET_DIR="$SCRIPT_DIR/dataset"
+    DATASET_BUCKET="gs://fire_dataset_3/"
+fi
 
 # Check if required dataset folders exist
 if [ -d "$DATASET_DIR/train" ] && [ -d "$DATASET_DIR/test" ] && [ -d "$DATASET_DIR/validation" ]; then
@@ -129,7 +139,7 @@ if [ -d "$DATASET_DIR/train" ] && [ -d "$DATASET_DIR/test" ] && [ -d "$DATASET_D
 else
     echo "Dataset not found. Downloading from GCS..."
     #gsutil -m rsync -r gs://fire_model_dataset/ "$DATASET_DIR"
-    gsutil -m rsync -r gs://fire_dataset_3/ "$DATASET_DIR"
+    gsutil -m rsync -r "$DATASET_BUCKET" "$DATASET_DIR"
 fi
 
 echo "Dataset copiado a: $DATASET_DIR"
@@ -157,6 +167,11 @@ fi
 if [ "$TEST_RUN" = true ]; then
     echo "Modo test-run activado: usando subconjunto reducido del dataset"
     TRAIN_CMD+=(--test-run)
+fi
+
+if [ "$RGB_RUN" = true ]; then
+    echo "Modo RGB activado: entrenamiento con modelo/dataset RGB (3 canales)"
+    TRAIN_CMD+=(--rgb)
 fi
 
 if [ -f training_log.txt ]; then

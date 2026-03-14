@@ -56,7 +56,8 @@ class TorchvisionEfficientNetForClassification(torch.nn.Module):
         super().__init__()
         weights = EfficientNet_V2_S_Weights.IMAGENET1K_V1 if pretrained else None
         self.efficientnet = efficientnet_v2_s(weights=weights)
-        _expand_first_conv(self.efficientnet, in_channels)
+        if in_channels != 3:
+            _expand_first_conv(self.efficientnet, in_channels)
 
         in_features = self.efficientnet.classifier[-1].in_features
         self.efficientnet.classifier[-1] = torch.nn.Linear(in_features, num_labels)
@@ -73,13 +74,13 @@ class TorchvisionEfficientNetForClassification(torch.nn.Module):
         return ImageClassifierOutput(loss=loss, logits=logits)
 
 
-def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=12):
+def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=12, use_rgb=False):
     if model_name == "torchvision/efficientnet_v2_s":
         model = TorchvisionEfficientNetForClassification(
             num_labels=num_labels,
             id2label=id2label,
             label2id=label2id,
-            in_channels=in_channels,
+            in_channels=3 if use_rgb else in_channels,
             pretrained=True,
         )
         return model, None
@@ -118,7 +119,8 @@ def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=12):
         ) from last_error
 
     if hasattr(model.config, "num_channels"):
-        model.config.num_channels = in_channels
+        model.config.num_channels = 3 if use_rgb else in_channels
 
-    _expand_first_conv(model, in_channels)
+    if not use_rgb:
+        _expand_first_conv(model, in_channels)
     return model, None
