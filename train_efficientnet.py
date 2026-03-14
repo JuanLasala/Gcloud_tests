@@ -131,12 +131,14 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=ds["train"],
-    eval_dataset=ds["validation"],
+    eval_dataset=ds['validation'],
     data_collator=collator,
     compute_metrics=compute_metrics,
-    tokenizer=processor
+    processing_class=processor,
+    callbacks=[EarlyStoppingCallback(
+        early_stopping_patience=8,
+        early_stopping_threshold=0.001,)]
 )
-
 # ---------------------------------------------------------------------
 # ENTRENAMIENTO
 # ---------------------------------------------------------------------
