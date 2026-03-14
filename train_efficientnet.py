@@ -337,11 +337,9 @@ if args.labels_csv:
 else:
     ds = load_imagefolder(DATA_PATH)
 
-    # Some datasets expose class ids as "labels" instead of "label".
-    # Normalize once so downstream code can consistently use "label".
     train_columns = set(ds["train"].column_names)
     if "label" not in train_columns and "labels" in train_columns:
-        print("[INFO] Renombrando columna 'labels' -> 'label' para mantener compatibilidad.")
+        print("[INFO] Renombrando columna 'labels' -> 'label'.")
         for split_name in ds.keys():
             split_columns = set(ds[split_name].column_names)
             if "labels" in split_columns and "label" not in split_columns:

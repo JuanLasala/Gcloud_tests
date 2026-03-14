@@ -5,6 +5,9 @@ val/
 vit-afinacion/
 external images/
 
+dataset_rgb/
+model_artifacts_template/
+
 # Ignorar modelos entrenados
 *.pt
 *.pth
