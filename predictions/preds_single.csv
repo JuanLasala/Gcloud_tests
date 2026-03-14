@@ -1,0 +1,2 @@
+file_path,prediction,prediction_index,confidence,threshold_used,prob_fire,probabilities
+/home/fperdomo/Desktop/run_20260301_042927/tile_10082.tiff,No_Fire,1,0.9999089241027832,0.5,9.107156074605882e-05,"{""Fire"": 9.107156074605882e-05, ""No_Fire"": 0.9999089241027832}"

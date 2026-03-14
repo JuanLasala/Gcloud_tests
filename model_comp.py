@@ -73,7 +73,7 @@ y_true_vit, y_pred_vit, probs_vit, paths_vit = evaluate_model_hf(model_vit, proc
 lat_vit = measure_latency(model_vit, processor_vit, ds)
 
 print("Loading EfficientNet...")
-processor_eff = AutoImageProcessor.from_pretrained("google/efficientnet-b4")
+processor_eff = AutoImageProcessor.from_pretrained("google/efficientnet-v2-s")
 model_eff = AutoModelForImageClassification.from_pretrained(PATH_EFF)
 print("Evaluating EfficientNet...")
 y_true_eff, y_pred_eff, probs_eff, paths_eff = evaluate_model_hf(model_eff, processor_eff, ds)

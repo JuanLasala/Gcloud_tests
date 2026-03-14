@@ -1,6 +1,37 @@
 #!/bin/bash
 set -e
 
+# CLI flags
+TEST_RUN=false
+
+usage() {
+    cat <<EOF
+Usage: $0 [options]
+
+Options:
+  --test-run   Ejecuta la pipeline en modo prueba (dataset reducido)
+  -h, --help   Muestra esta ayuda
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --test-run)
+            TEST_RUN=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "[ERROR] Argumento no reconocido: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
 
@@ -102,13 +133,16 @@ echo "=========================="
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
 
-# Check if required dataset folders exist
-if [ -d "train" ] && [ -d "test" ] && [ -d 'val' ]; then
-    echo "Dataset already present (train, test, val found). Skipping download."
+DATASET_DIR="$SCRIPT_DIR/dataset_rgb"
+
+# Check if required dataset folders exist inside dataset_rgb
+if [ -d "$DATASET_DIR/train" ] && [ -d "$DATASET_DIR/test" ] && [ -d "$DATASET_DIR/validation" ]; then
+    echo "Dataset already present in $DATASET_DIR (train, test, validation found). Skipping download."
 else
-    echo "Dataset not found. Downloading from GCS..."
+    echo "Dataset not found in $DATASET_DIR. Downloading from GCS..."
     #gsutil -m rsync -r gs://fire_model_dataset/ .
     #gsutil -m rsync -r gs://fire_dataset_2/ .
+    gsutil -m rsync -r gs://new_rgb_dataset/dataset "$DATASET_DIR"
 fi
 
 echo "Dataset copiado a: $SCRIPT_DIR"
