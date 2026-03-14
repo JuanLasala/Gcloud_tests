@@ -337,6 +337,22 @@ if args.labels_csv:
 else:
     ds = load_imagefolder(DATA_PATH)
 
+    # Some datasets expose class ids as "labels" instead of "label".
+    # Normalize once so downstream code can consistently use "label".
+    train_columns = set(ds["train"].column_names)
+    if "label" not in train_columns and "labels" in train_columns:
+        print("[INFO] Renombrando columna 'labels' -> 'label' para mantener compatibilidad.")
+        for split_name in ds.keys():
+            split_columns = set(ds[split_name].column_names)
+            if "labels" in split_columns and "label" not in split_columns:
+                ds[split_name] = ds[split_name].rename_column("labels", "label")
+
+    if "label" not in ds["train"].column_names:
+        raise KeyError(
+            "No se encontró columna de clases. Columnas disponibles en train: "
+            f"{ds['train'].column_names}"
+        )
+
 
 # =================================================================
 # PRUEBA RÁPIDA CON DATASET REDUCIDO
