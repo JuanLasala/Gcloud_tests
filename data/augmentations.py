@@ -12,10 +12,10 @@ train_augmentations = v2.Compose([
 
 train_augmentations_multiband = v2.Compose([
     v2.RandomHorizontalFlip(),
-    v2.RandomResizedCrop(size=(380, 380), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
+    v2.RandomResizedCrop(size=(384, 384), scale=(0.8, 1.0), interpolation=InterpolationMode.BILINEAR),
     v2.RandomRotation(degrees=15, interpolation=InterpolationMode.BILINEAR, fill=0),
 ])
 
 eval_augmentations_multiband = v2.Compose([
-    v2.Resize((380, 380), interpolation=InterpolationMode.BILINEAR, antialias=True),
+    v2.Resize((384, 384), interpolation=InterpolationMode.BILINEAR, antialias=True),
 ])
