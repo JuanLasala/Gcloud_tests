@@ -2,8 +2,17 @@ import os
 import torch
 import torch.nn.functional as F
 import numpy as np
+from PIL import Image as PILImage
+from torchvision.transforms import functional as tvf
 
 from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
+
+
+def _load_image_tensor(path: str, use_rgb: bool) -> torch.Tensor:
+    if use_rgb:
+        with PILImage.open(path) as img:
+            return tvf.pil_to_tensor(img.convert("RGB")).float() / 255.0
+    return load_multiband_tiff(path)
 
 fp_paths = []
 fn_paths = []
@@ -32,6 +41,7 @@ def save_misclassified_images(
     threshold=None,
     pred_labels=None,
     true_labels=None,
+    use_rgb=False,
 ):
     """
     Collect paths of misclassified images (FP and FN)
@@ -76,7 +86,7 @@ def save_misclassified_images(
         if "pixel_values" in item:
             tensor = item["pixel_values"]
         else:
-            tensor = load_multiband_tiff(image_path)
+            tensor = _load_image_tensor(image_path, use_rgb)
 
         if not isinstance(tensor, torch.Tensor):
             tensor = torch.tensor(tensor)

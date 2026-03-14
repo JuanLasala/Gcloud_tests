@@ -561,10 +561,11 @@ fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
     no_fire_index=no_fire_index,
     pred_labels=y_pred_threshold,
     true_labels=y_true,
+    use_rgb=args.rgb,
 )
 
 create_gradcam_for_misclassified(
-    model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified"
+    model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified", use_rgb=args.rgb
 )
 
 # -------------------------------------------------------------------------

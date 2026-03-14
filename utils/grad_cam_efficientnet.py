@@ -3,8 +3,19 @@ import numpy as np
 import cv2
 import os
 from PIL import Image
+from torchvision.transforms import functional as tvf
 
 from data.multiband_tiff import load_multiband_tiff, make_rgb_preview
+
+
+def _load_image_tensor(path: str, use_rgb: bool):
+    if use_rgb:
+        with Image.open(path) as img:
+            pil_rgb = img.convert("RGB")
+            tensor = tvf.pil_to_tensor(pil_rgb).float() / 255.0
+            return tensor, pil_rgb
+    tensor = load_multiband_tiff(path)
+    return tensor, Image.fromarray(make_rgb_preview(tensor))
 
 
 # =====================================================
@@ -29,15 +40,14 @@ def get_last_conv_layer(model):
 # =====================================================
 # Grad-CAM for EfficientNet
 # =====================================================
-def generate_efficientnet_gradcam(model, processor, image_path, output_path):
+def generate_efficientnet_gradcam(model, processor, image_path, output_path, use_rgb=False):
     """
     Generates a classic Grad-CAM for EfficientNet.
     """
     model.eval()
-    
+
     # ----- load image -----
-    tensor = load_multiband_tiff(image_path)
-    img_pil = Image.fromarray(make_rgb_preview(tensor))
+    tensor, img_pil = _load_image_tensor(image_path, use_rgb)
     inputs = {"pixel_values": tensor.unsqueeze(0)}
 
     device = next(model.parameters()).device
@@ -122,7 +132,7 @@ def generate_efficientnet_gradcam(model, processor, image_path, output_path):
 # =====================================================
 # Create Grad-CAM for false positives and negatives
 # =====================================================
-def create_gradcam_for_misclassified(model, processor, fp_paths, fn_paths, output_dir):
+def create_gradcam_for_misclassified(model, processor, fp_paths, fn_paths, output_dir, use_rgb=False):
     fp_gradcam_dir = os.path.join(output_dir, "false_positives_gradcam")
     fn_gradcam_dir = os.path.join(output_dir, "false_negatives_gradcam")
 
@@ -135,12 +145,12 @@ def create_gradcam_for_misclassified(model, processor, fp_paths, fn_paths, outpu
     for img_path in fp_paths:
         filename = os.path.basename(img_path)
         save_path = os.path.join(fp_gradcam_dir, f"GC_{filename}")
-        generate_efficientnet_gradcam(model, processor, img_path, save_path)
+        generate_efficientnet_gradcam(model, processor, img_path, save_path, use_rgb=use_rgb)
 
     # false negatives
     for img_path in fn_paths:
         filename = os.path.basename(img_path)
         save_path = os.path.join(fn_gradcam_dir, f"GC_{filename}")
-        generate_efficientnet_gradcam(model, processor, img_path, save_path)
+        generate_efficientnet_gradcam(model, processor, img_path, save_path, use_rgb=use_rgb)
 
     print("✔ Grad-CAM ready for FP and FN.\n")
