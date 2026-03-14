@@ -6,7 +6,7 @@ vit-afinacion/
 external images/
 
 # Ignorar modelos entrenados
-models/
+#models/
 *.pt
 *.pth
 *.h5
