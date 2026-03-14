@@ -396,8 +396,9 @@ if args.generate_config_only:
     print(f"Config-only mode completado. Artefactos generados en: {best_model_dir}")
     raise SystemExit(0)
 
-fire_index = labels.index("Fire")
-no_fire_index = labels.index("No_Fire")
+labels_lower = [l.lower() for l in labels]
+fire_index = labels_lower.index("fire")
+no_fire_index = labels_lower.index("no_fire")
 
 # ---------------------------------------------------------------------
 # CARGA DEL MODELO
