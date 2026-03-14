@@ -5,7 +5,7 @@ from datasets import load_dataset
 from transformers import TrainingArguments, Trainer
 from torchvision import transforms
 from collections import Counter
-
+from transformers import EarlyStoppingCallback
 
 # --- módulos propios ---
 from models.model_loader import load_hf_model
