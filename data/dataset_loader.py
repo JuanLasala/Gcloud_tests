@@ -2,11 +2,13 @@ from datasets import load_dataset, DatasetDict
 
 def load_imagefolder(path):
     ds_full = load_dataset("imagefolder", data_dir=path)
-    # Add a new column "path" to the dataset
+    # Add a new column "path" to the dataset.
+    # Return ONLY the new key so datasets preserves all original feature types
+    # (ClassLabel, Image, etc.) without re-inference.
     def add_path(example):
-        example["path"] = example["image"].filename
-        return example
-        # Apply the function to add the "path" column to the dataset
+        img = example["image"]
+        path = getattr(img, "filename", None) or ""
+        return {"path": path}
     ds_full = ds_full.map(add_path)
     # Return the modified dataset as a DatasetDict
     return DatasetDict({

@@ -112,7 +112,7 @@ def eval_transform_effnet(batch):
     return {"image": images, "label": batch["label"], "path": batch["path"]}
 ds = {
     "train": ds["train"].with_transform(train_transform_effnet),
-    "val": ds["validation"].with_transform(eval_transform_effnet),
+    "val": ds["val"].with_transform(eval_transform_effnet),
     "test": ds["test"].with_transform(eval_transform_effnet),
 }
 # ---------------------------------------------------------------------
@@ -131,7 +131,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=ds["train"],
-    eval_dataset=ds['validation'],
+    eval_dataset=ds['val'],
     data_collator=collator,
     compute_metrics=compute_metrics,
     processing_class=processor,
@@ -166,7 +166,7 @@ trainer.save_metrics("eval", metrics)
 # IMÁGENES MAL CLASIFICADAS
 # -------------------------------------------------------------------------
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds["validation"], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
+    model, processor, ds["val"], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
 )
 
 create_gradcam_for_misclassified(
@@ -176,14 +176,14 @@ create_gradcam_for_misclassified(
 # -------------------------------------------------------------------------
 # PLOTS
 # -------------------------------------------------------------------------
-preds = trainer.predict(ds["validation"])
+preds = trainer.predict(ds["val"])
 y_pred = preds.predictions.argmax(axis=1)
 y_true = preds.label_ids
 plot_confusion(y_true, y_pred, labels, RUN_DIR)
 print('confusion done')
 save_classification_report(y_true, y_pred, labels, RUN_DIR)
 print('report done')
-"""fps = inspect_fp(model, processor, ds["validation"], labels)
+"""fps = inspect_fp(model, processor, ds["val"], labels)
 print("FOUND FP:", len(fps))
 for r in fps[:10]:
     print(r)

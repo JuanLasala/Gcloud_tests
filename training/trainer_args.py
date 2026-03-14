@@ -26,4 +26,5 @@ def get_training_args(output_dir, lr=1e-4, epochs=25): #3e-5, 25 epochs
         warmup_ratio=0.1,
         weight_decay=0.01,
         #label_smoothing_factor=0.1,
+        report_to="none",
     )

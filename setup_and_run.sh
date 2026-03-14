@@ -158,7 +158,7 @@ echo "=========================="
 #python train_vit.py
 RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
 
-TRAIN_CMD=(python train_efficientnet.py)
+TRAIN_CMD=(python -u train_efficientnet.py)
 
 if [ -n "$RESUME_RUN_DIR" ]; then
     echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
