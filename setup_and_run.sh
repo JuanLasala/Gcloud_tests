@@ -129,8 +129,8 @@ if [ "$RGB_RUN" = true ]; then
     DATASET_DIR="$SCRIPT_DIR/dataset_rgb"
     DATASET_BUCKET="gs://new_rgb_dataset/dataset"
 else
-    DATASET_DIR = "$SCRIPT_DIR/dataset"
-    DATASET_BUCKET = "gs://bucket_six_bands/dataset"
+    DATASET_DIR= "$SCRIPT_DIR/dataset"
+    DATASET_BUCKET= "gs://bucket_six_bands/dataset"
 fi
 
 # Check if required dataset folders exist
