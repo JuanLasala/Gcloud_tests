@@ -285,6 +285,20 @@ def save_trainer_configuration_txt(
     os.makedirs(best_model_dir, exist_ok=True)
     config_path = os.path.join(best_model_dir, "trainer_configuration.txt")
 
+    def serialize_callback(callback):
+        callback_info = {
+            "class_name": callback.__class__.__name__,
+        }
+
+        for attr_name in [
+            "early_stopping_patience",
+            "early_stopping_threshold",
+        ]:
+            if hasattr(callback, attr_name):
+                callback_info[attr_name] = getattr(callback, attr_name)
+
+        return callback_info
+
     if hasattr(training_args, "to_dict"):
         training_args_dict = training_args.to_dict()
     else:
@@ -301,7 +315,7 @@ def save_trainer_configuration_txt(
         "eval_dataset_size": len(trainer.eval_dataset) if trainer.eval_dataset is not None else None,
         "data_collator": trainer.data_collator.__class__.__name__ if trainer.data_collator is not None else None,
         "compute_metrics": trainer.compute_metrics.__name__ if trainer.compute_metrics is not None else None,
-        "callbacks": [callback.__class__.__name__ for callback in trainer.callback_handler.callbacks],
+        "callbacks": [serialize_callback(callback) for callback in trainer.callback_handler.callbacks],
     }
 
     with open(config_path, "w") as config_file:
