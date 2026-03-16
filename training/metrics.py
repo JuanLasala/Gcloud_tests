@@ -22,6 +22,13 @@ def compute_metrics(eval_pred):
     threshold = 0.5
     preds = (fire_probs >= threshold).astype(int)
 
+    f1_fire_value = f1.compute(
+        predictions=preds,
+        references=labels,
+        average="binary",
+        pos_label=FIRE_INDEX,
+    )["f1"]
+
     return {
         # Optional (can remove if not useful for your case)
         "accuracy": accuracy.compute(
@@ -44,12 +51,10 @@ def compute_metrics(eval_pred):
             pos_label=FIRE_INDEX,
         )["recall"],
 
-        "f1_fire": f1.compute(
-            predictions=preds,
-            references=labels,
-            average="binary",
-            pos_label=FIRE_INDEX,
-        )["f1"],
+        "f1_fire": f1_fire_value,
+
+        # Alias for Trainer metric_for_best_model="f1"
+        "f1": f1_fire_value,
 
         # Threshold-independent (recommended for metric_for_best_model)
         "roc_auc": roc_auc.compute(
