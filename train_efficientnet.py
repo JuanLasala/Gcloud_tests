@@ -273,6 +273,47 @@ def ensure_inference_artifacts(best_model_dir, model, processor, model_name, tar
             print(f"Preprocessor config guardado en: {preprocessor_config_path}")
 
 
+def save_trainer_configuration_txt(
+    best_model_dir,
+    training_args,
+    trainer,
+    model_name,
+    target_channels,
+    use_rgb,
+    resume_checkpoint,
+):
+    os.makedirs(best_model_dir, exist_ok=True)
+    config_path = os.path.join(best_model_dir, "trainer_configuration.txt")
+
+    if hasattr(training_args, "to_dict"):
+        training_args_dict = training_args.to_dict()
+    else:
+        training_args_dict = vars(training_args)
+
+    trainer_config = {
+        "model_name": model_name,
+        "model_class": trainer.model.__class__.__name__,
+        "best_model_dir": best_model_dir,
+        "resume_checkpoint": resume_checkpoint,
+        "use_rgb": bool(use_rgb),
+        "target_channels": int(target_channels),
+        "train_dataset_size": len(trainer.train_dataset) if trainer.train_dataset is not None else None,
+        "eval_dataset_size": len(trainer.eval_dataset) if trainer.eval_dataset is not None else None,
+        "data_collator": trainer.data_collator.__class__.__name__ if trainer.data_collator is not None else None,
+        "compute_metrics": trainer.compute_metrics.__name__ if trainer.compute_metrics is not None else None,
+        "callbacks": [callback.__class__.__name__ for callback in trainer.callback_handler.callbacks],
+    }
+
+    with open(config_path, "w") as config_file:
+        config_file.write("=== TrainingArguments ===\n")
+        config_file.write(json.dumps(training_args_dict, indent=2, sort_keys=True, default=str))
+        config_file.write("\n\n=== Trainer Configuration ===\n")
+        config_file.write(json.dumps(trainer_config, indent=2, sort_keys=True, default=str))
+        config_file.write("\n")
+
+    print(f"Trainer config guardado en: {config_path}")
+
+
 args = parse_args()
 
 resume_source = args.resume_from
@@ -488,6 +529,16 @@ trainer = Trainer(
     callbacks=[EarlyStoppingCallback(
         early_stopping_patience=8,
         early_stopping_threshold=0.001,)]
+)
+
+save_trainer_configuration_txt(
+    best_model_dir=os.path.join(RUN_DIR, "best_model"),
+    training_args=training_args,
+    trainer=trainer,
+    model_name=MODEL_NAME,
+    target_channels=TARGET_CHANNELS,
+    use_rgb=args.rgb,
+    resume_checkpoint=RESUME_CHECKPOINT,
 )
 
 # ---------------------------------------------------------------------
