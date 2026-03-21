@@ -98,12 +98,15 @@ def normalize_for_efficientnet(arr: np.ndarray) -> torch.Tensor:
     """
     arr = arr.astype(np.float32)
 
-    # 🔥 Apply SAME log transform as stats computation
+    # Keep log1p input in valid domain to avoid NaN on values <= -1.
     for c in IR_INDICES:
-        arr[..., c] = np.log1p(arr[..., c])
+        arr[..., c] = np.log1p(np.maximum(arr[..., c], -0.999999))
 
     # 📊 Global normalization
     arr = (arr - GLOBAL_MEAN) / (GLOBAL_STD + 1e-6)
+
+    # Safety guard against downstream metric failures caused by non-finite values.
+    arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
 
     # 🔄 Convert to PyTorch format
     tensor = torch.from_numpy(arr).permute(2, 0, 1)

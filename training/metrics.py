@@ -13,10 +13,13 @@ FIRE_INDEX = 1  # <-- set this explicitly once and reuse everywhere
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
+    labels = np.asarray(labels)
 
     # Numerically stable softmax (avoid np.exp overflow)
     probs = softmax(logits, axis=1)
-    fire_probs = probs[:, FIRE_INDEX]  # probability of Fire class
+    probs = np.nan_to_num(probs, nan=0.5, posinf=1.0, neginf=0.0)
+    fire_probs = np.clip(probs[:, FIRE_INDEX], 0.0, 1.0)  # probability of Fire class
+    fire_probs = np.nan_to_num(fire_probs, nan=0.5, posinf=1.0, neginf=0.0)
 
     # FIXED threshold during training (do NOT tune here)
     threshold = 0.5
@@ -28,6 +31,22 @@ def compute_metrics(eval_pred):
         average="binary",
         pos_label=FIRE_INDEX,
     )["f1"]
+
+    try:
+        roc_auc_value = roc_auc.compute(
+            prediction_scores=fire_probs,
+            references=labels,
+        )["roc_auc"]
+    except ValueError:
+        # Keep training/evaluation running for rare degenerate eval batches.
+        roc_auc_value = 0.5
+
+    try:
+        pr_auc_value = average_precision_score(labels, fire_probs)
+        if not np.isfinite(pr_auc_value):
+            pr_auc_value = 0.0
+    except ValueError:
+        pr_auc_value = 0.0
 
     return {
         # Optional (can remove if not useful for your case)
@@ -57,14 +76,8 @@ def compute_metrics(eval_pred):
         "f1": f1_fire_value,
 
         # Threshold-independent (recommended for metric_for_best_model)
-        "roc_auc": roc_auc.compute(
-            prediction_scores=fire_probs,  # <-- use probabilities
-            references=labels,
-        )["roc_auc"],
+        "roc_auc": float(roc_auc_value),
 
         # PR-AUC (very informative for rare-event problems like wildfire)
-        "pr_auc": average_precision_score(
-            labels,
-            fire_probs
-        ),
+        "pr_auc": float(pr_auc_value),
     }

@@ -15,7 +15,8 @@ def find_optimal_threshold(
 
     # Stable softmax
     probs = softmax(logits, axis=1)
-    fire_probs = probs[:, fire_index]
+    probs = np.nan_to_num(probs, nan=0.5, posinf=1.0, neginf=0.0)
+    fire_probs = np.clip(probs[:, fire_index], 0.0, 1.0)
 
     binary_labels = (labels == fire_index).astype(int)
 
@@ -96,7 +97,8 @@ def apply_threshold(
     """
 
     probs = softmax(logits, axis=1)  # <-- stable
-    fire_probs = probs[:, fire_index]
+    probs = np.nan_to_num(probs, nan=0.5, posinf=1.0, neginf=0.0)
+    fire_probs = np.clip(probs[:, fire_index], 0.0, 1.0)
 
     other_index = 1 - fire_index
 
