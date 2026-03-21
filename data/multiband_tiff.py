@@ -102,42 +102,14 @@ def normalize_for_efficientnet(arr: np.ndarray) -> torch.Tensor:
     for c in IR_INDICES:
         arr[..., c] = np.log1p(np.maximum(arr[..., c], -0.999999))
 
-    # 📊 Global normalization
+
     arr = (arr - GLOBAL_MEAN) / (GLOBAL_STD + 1e-6)
 
     # Safety guard against downstream metric failures caused by non-finite values.
     arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
 
-    # 🔄 Convert to PyTorch format
+    # Leave in pytorch format
     tensor = torch.from_numpy(arr).permute(2, 0, 1)
 
     return tensor
 
-# --- 2. Usage in a Dataset Class ---
-""" class WildfireDataset(Dataset):
-    def __init__(self, tiff_paths, labels, transform=None):
-        self.tiff_paths = tiff_paths  # List of paths (local or GCS fuse)
-        self.labels = labels
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.tiff_paths)
-
-    def __getitem__(self, idx):
-        path = self.tiff_paths[idx]
-        label = self.labels[idx]
-
-        # --- This is where raw_tiff_data comes from ---
-        with rasterio.open(path) as src:
-            # src.read() returns a NumPy array of shape (Channels, Height, Width)
-            # For 6 bands, this is (6, H, W)
-            raw_tiff_data = src.read().astype('float32')
-
-        # Convert to PyTorch Tensor
-        img_tensor = torch.from_numpy(raw_tiff_data)
-
-        # Apply your custom_normalize (and any other transforms)
-        if self.transform:
-            img_tensor = self.transform(img_tensor)
-
-        return img_tensor, torch.tensor(label, dtype=torch.long) """

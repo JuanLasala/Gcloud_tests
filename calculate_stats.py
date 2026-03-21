@@ -10,7 +10,7 @@ def calculate_dataset_stats(bucket_name, prefix="dataset/train/", output_file="n
     bucket = client.bucket(bucket_name)
     blobs = list(bucket.list_blobs(prefix=prefix))
     
-    # Filter for .tif files
+
     tiff_blobs = [b for b in blobs if b.name.endswith(('.tif', '.tiff'))]
     
     num_channels = 6
@@ -27,8 +27,8 @@ def calculate_dataset_stats(bucket_name, prefix="dataset/train/", output_file="n
                 # Read shape: (6, H, W)
                 data = src.read().astype(np.float32)
 
-                # Example: apply to IR channels (adjust indices!)
-                ir_indices = [3, 4, 5]  # or whichever are IR
+                # Example: apply to IR channels
+                ir_indices = [3, 4, 5]
 
                 for c in ir_indices:
                     data[c] = np.log1p(data[c])
@@ -45,8 +45,7 @@ def calculate_dataset_stats(bucket_name, prefix="dataset/train/", output_file="n
     mean = sum_val / pixel_count
     std = np.sqrt((sum_sq_val / pixel_count) - (mean**2))
 
-    # --- Save to .txt file ---
-    # We stack them so the file has two rows: first row is means, second is stds
+
     stats_matrix = np.vstack([mean, std])
     np.savetxt(output_file, stats_matrix, delimiter=',', 
                header="Row 1: Means (6 bands), Row 2: Stds (6 bands)")
