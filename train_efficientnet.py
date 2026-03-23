@@ -8,6 +8,9 @@ from torchvision.transforms import functional as tvf
 from transformers import Trainer
 from transformers import EarlyStoppingCallback
 import threading
+import numpy as np
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
+import torch.nn.functional as F
 
 
 # --- módulos propios ---
@@ -682,7 +685,6 @@ if 'test' in ds:
     save_classification_report(y_test_true, y_test_pred, labels, RUN_DIR)
     print('Test classification report saved')
     # Guardar métricas principales
-    from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
     test_precision = precision_score(y_test_true, y_test_pred, average='weighted')
     test_recall = recall_score(y_test_true, y_test_pred, average='weighted')
     test_f1 = f1_score(y_test_true, y_test_pred, average='weighted')
@@ -691,11 +693,19 @@ if 'test' in ds:
     try:
         if len(set(y_test_true)) == 2:
             # For binary, use probabilities for positive class
-            test_probs = test_logits[:, fire_index] if test_logits.ndim > 1 else test_logits
+            if test_logits.ndim > 1 and test_logits.shape[1] == 2:
+                # Apply softmax to get probabilities
+                test_probs = F.softmax(torch.tensor(test_logits), dim=1).numpy()[:, fire_index]
+            elif test_logits.ndim == 1:
+                # If already 1D, apply sigmoid
+                test_probs = 1 / (1 + np.exp(-test_logits))
+            else:
+                test_probs = test_logits[:, fire_index]  # fallback
             test_roc_auc = roc_auc_score(y_test_true, test_probs)
         else:
-            # For multiclass, use one-vs-rest
-            test_roc_auc = roc_auc_score(y_test_true, test_logits, multi_class='ovr')
+            # For multiclass, use softmax probabilities
+            test_probs = F.softmax(torch.tensor(test_logits), dim=1).numpy()
+            test_roc_auc = roc_auc_score(y_test_true, test_probs, multi_class='ovr')
     except Exception as e:
         test_roc_auc = None
     test_metrics = {
