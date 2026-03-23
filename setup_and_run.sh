@@ -223,7 +223,8 @@ fi
 
 # Apagar solo si NO es test-run
 if [ "$TEST_RUN" = false ]; then
-    sudo shutdown -h now
+    #sudo shutdown -h now
+    echo "Would have turned off, but that is disabled for now"
 else
     echo "[INFO] Test-run: no se apaga el sistema."
 fi
