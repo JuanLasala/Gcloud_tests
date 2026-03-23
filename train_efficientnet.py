@@ -7,6 +7,7 @@ from PIL import Image
 from torchvision.transforms import functional as tvf
 from transformers import Trainer
 from transformers import EarlyStoppingCallback
+import threading
 
 
 # --- módulos propios ---
@@ -679,17 +680,34 @@ if 'test' in ds:
     save_classification_report(y_test_true, y_test_pred, labels, RUN_DIR)
     print('Test classification report saved')
     # Guardar métricas principales
-    from sklearn.metrics import precision_score, recall_score, f1_score
+    from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
     test_precision = precision_score(y_test_true, y_test_pred, average='weighted')
     test_recall = recall_score(y_test_true, y_test_pred, average='weighted')
     test_f1 = f1_score(y_test_true, y_test_pred, average='weighted')
+    test_accuracy = accuracy_score(y_test_true, y_test_pred)
+    # Compute ROC AUC (only if binary or multilabel with proper shape)
+    try:
+        if len(set(y_test_true)) == 2:
+            # For binary, use probabilities for positive class
+            test_probs = test_logits[:, fire_index] if test_logits.ndim > 1 else test_logits
+            test_roc_auc = roc_auc_score(y_test_true, test_probs)
+        else:
+            # For multiclass, use one-vs-rest
+            test_roc_auc = roc_auc_score(y_test_true, test_logits, multi_class='ovr')
+    except Exception as e:
+        test_roc_auc = None
     test_metrics = {
         'precision': test_precision,
         'recall': test_recall,
         'f1': test_f1,
+        'accuracy': test_accuracy,
+        'roc_auc': test_roc_auc,
     }
-    with open(os.path.join(RUN_DIR, "test_metrics.json"), "w") as f:
-        json.dump(test_metrics, f, indent=2)
+    # Lock file writing to avoid tqdm interference
+    file_lock = threading.Lock()
+    with file_lock:
+        with open(os.path.join(RUN_DIR, "test_metrics.json"), "w") as f:
+            json.dump(test_metrics, f, indent=2)
     print(f"Test metrics saved in: {os.path.join(RUN_DIR, 'test_metrics.json')}")
 else:
     print("No test split found in dataset. Skipping test evaluation.")
