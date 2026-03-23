@@ -4,6 +4,7 @@ import tifffile
 import logging
 import rasterio
 from contextlib import contextmanager
+import warnings
 
 
 
@@ -18,10 +19,17 @@ def _quiet_tifffile_gdal_nodata_warning():
     logger = logging.getLogger("tifffile")
     warning_filter = _SuppressGDALNoDataWarning()
     logger.addFilter(warning_filter)
-    try:
-        yield
-    finally:
-        logger.removeFilter(warning_filter)
+    # Suppress Python warnings matching the GDAL_NODATA message
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*parsing GDAL_NODATA tag raised ValueError.*",
+            category=UserWarning,
+        )
+        try:
+            yield
+        finally:
+            logger.removeFilter(warning_filter)
 
 def _ensure_channel_last(arr: np.ndarray) -> np.ndarray:
     if arr.ndim == 2:
