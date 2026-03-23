@@ -679,6 +679,33 @@ if 'test' in ds:
     y_test_pred = apply_threshold(test_logits, fire_index, optimal_threshold)
     y_test_true = test_labels
 
+    # --- Compute and save confusion details and misclassified names ---
+    from sklearn.metrics import confusion_matrix
+    test_cm = confusion_matrix(y_test_true, y_test_pred, labels=[fire_index, no_fire_index])
+    # test_cm: rows=true, cols=pred; for binary: [[TP, FN], [FP, TN]] if order is [fire, no_fire]
+    # But sklearn confusion_matrix returns: [[TN, FP], [FN, TP]] for binary if labels=[0,1]
+    # Let's map indices for clarity
+    tn, fp, fn, tp = 0, 0, 0, 0
+    if test_cm.shape == (2,2):
+        tn, fp, fn, tp = test_cm.ravel()
+    # Find misclassified image names
+    misclassified = []
+    for i, (true, pred) in enumerate(zip(y_test_true, y_test_pred)):
+        if true != pred:
+            # ds['test'][i]['path'] should exist due to load_imagefolder
+            misclassified.append(ds['test'][i]['path'])
+    # Save to JSON
+    confusion_details = {
+        'true_positives': int(tp),
+        'true_negatives': int(tn),
+        'false_positives': int(fp),
+        'false_negatives': int(fn),
+        'misclassified': misclassified
+    }
+    with open(os.path.join(RUN_DIR, "test_confusion_details.json"), "w") as f:
+        json.dump(confusion_details, f, indent=2)
+    print(f"Test confusion details saved in: {os.path.join(RUN_DIR, 'test_confusion_details.json')}")
+
     # Métricas y reportes en test
     plot_confusion(y_test_true, y_test_pred, labels, RUN_DIR)
     print('Test confusion matrix saved')
