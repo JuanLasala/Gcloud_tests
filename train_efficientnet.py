@@ -661,6 +661,39 @@ with open(os.path.join(RUN_DIR, "optimal_threshold.json"), "w") as f:
     json.dump(threshold_info, f, indent=2)
 print(f"Umbral guardado en: {os.path.join(RUN_DIR, 'optimal_threshold.json')}\n")
 
+
+# -------------------------------------------------------------------------
+# FINAL TEST EVALUATION (using optimal threshold from validation)
+# ------------------------------------------------------------------------- 
+print("\n=== Evaluación final en test set ===")
+if 'test' in ds:
+    test_preds = trainer.predict(ds['test'])
+    test_logits = test_preds.predictions
+    test_labels = test_preds.label_ids
+    y_test_pred = apply_threshold(test_logits, fire_index, optimal_threshold)
+    y_test_true = test_labels
+
+    # Métricas y reportes en test
+    plot_confusion(y_test_true, y_test_pred, labels, RUN_DIR)
+    print('Test confusion matrix saved')
+    save_classification_report(y_test_true, y_test_pred, labels, RUN_DIR)
+    print('Test classification report saved')
+    # Guardar métricas principales
+    from sklearn.metrics import precision_score, recall_score, f1_score
+    test_precision = precision_score(y_test_true, y_test_pred, average='weighted')
+    test_recall = recall_score(y_test_true, y_test_pred, average='weighted')
+    test_f1 = f1_score(y_test_true, y_test_pred, average='weighted')
+    test_metrics = {
+        'precision': test_precision,
+        'recall': test_recall,
+        'f1': test_f1,
+    }
+    with open(os.path.join(RUN_DIR, "test_metrics.json"), "w") as f:
+        json.dump(test_metrics, f, indent=2)
+    print(f"Test metrics saved in: {os.path.join(RUN_DIR, 'test_metrics.json')}")
+else:
+    print("No test split found in dataset. Skipping test evaluation.")
+
 training_end = datetime.now()
 training_duration = training_end - train_start
 total_seconds = int(training_duration.total_seconds())

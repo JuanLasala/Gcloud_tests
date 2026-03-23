@@ -195,4 +195,35 @@ echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
 
-sudo shutdown -h now
+# --- Enviar training_log.txt por correo antes de apagar ---
+EMAIL="incendiosforestalesuy@gmail.com"
+SUBJECT="Entrenamiento finalizado: training_log.txt"
+BODY="Adjunto el log de entrenamiento."
+
+# Determinar ubicación del log
+LOG_PATH=""
+if [ -n "${RUN_DIR_FROM_LOG:-}" ] && [ -f "$RUN_DIR_FROM_LOG/training_log.txt" ]; then
+    LOG_PATH="$RUN_DIR_FROM_LOG/training_log.txt"
+elif [ -f "$SCRIPT_DIR/training_log.txt" ]; then
+    LOG_PATH="$SCRIPT_DIR/training_log.txt"
+fi
+
+if [ -n "$LOG_PATH" ]; then
+    echo "Enviando $LOG_PATH a $EMAIL..."
+    if command -v mailx >/dev/null 2>&1; then
+        echo "$BODY" | mailx -s "$SUBJECT" -a "$LOG_PATH" "$EMAIL"
+    elif command -v mutt >/dev/null 2>&1; then
+        echo "$BODY" | mutt -s "$SUBJECT" -a "$LOG_PATH" -- "$EMAIL"
+    else
+        echo "[ERROR] No se encontró mailx ni mutt para enviar el correo."
+    fi
+else
+    echo "[WARN] No se encontró training_log.txt para enviar por correo."
+fi
+
+# Apagar solo si NO es test-run
+if [ "$TEST_RUN" = false ]; then
+    sudo shutdown -h now
+else
+    echo "[INFO] Test-run: no se apaga el sistema."
+fi

@@ -36,12 +36,29 @@ def _expand_first_conv(model, in_channels):
 
     with torch.no_grad():
         if in_channels >= old_conv.in_channels:
-            new_conv.weight[:, : old_conv.in_channels, :, :] = old_conv.weight
-            if in_channels > old_conv.in_channels:
-                src_mean = old_conv.weight.mean(dim=1, keepdim=True)
-                new_conv.weight[:, old_conv.in_channels :, :, :] = src_mean.repeat(
-                    1, in_channels - old_conv.in_channels, 1, 1
-                )
+            # Custom mapping: pretrained weights are [R,G,B] -> user channels [B,G,R,...]
+            # Only map if in_channels >= 4 (for your case)
+            if in_channels >= 4:
+                # Zero weights first
+                new_conv.weight.zero_()
+                # Blue (ch 0) <- pretrained Blue (old ch 2)
+                new_conv.weight[:, 0, :, :] = old_conv.weight[:, 2, :, :]
+                # Green (ch 1) <- pretrained Green (old ch 1)
+                new_conv.weight[:, 1, :, :] = old_conv.weight[:, 1, :, :]
+                # Red (ch 3) <- pretrained Red (old ch 0)
+                new_conv.weight[:, 3, :, :] = old_conv.weight[:, 0, :, :]
+                # Any extra channels: fill with mean
+                if in_channels > 4:
+                    src_mean = old_conv.weight.mean(dim=1, keepdim=True)
+                    new_conv.weight[:, 4:, :, :] = src_mean.repeat(1, in_channels - 4, 1, 1)
+            else:
+                # Fallback: original logic for <=3 channels
+                new_conv.weight[:, : old_conv.in_channels, :, :] = old_conv.weight
+                if in_channels > old_conv.in_channels:
+                    src_mean = old_conv.weight.mean(dim=1, keepdim=True)
+                    new_conv.weight[:, old_conv.in_channels :, :, :] = src_mean.repeat(
+                        1, in_channels - old_conv.in_channels, 1, 1
+                    )
         else:
             new_conv.weight.copy_(old_conv.weight[:, :in_channels, :, :])
         if old_conv.bias is not None:
@@ -74,7 +91,7 @@ class TorchvisionEfficientNetForClassification(torch.nn.Module):
         return ImageClassifierOutput(loss=loss, logits=logits)
 
 
-def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=12, use_rgb=False):
+def load_hf_model(model_name, num_labels, id2label, label2id, in_channels=6, use_rgb=False):
     if model_name == "torchvision/efficientnet_v2_s":
         model = TorchvisionEfficientNetForClassification(
             num_labels=num_labels,
