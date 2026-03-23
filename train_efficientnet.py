@@ -658,8 +658,10 @@ threshold_info = {
     "fire_index": int(fire_index),
     "metrics": threshold_metrics,
 }
-with open(os.path.join(RUN_DIR, "optimal_threshold.json"), "w") as f:
-    json.dump(threshold_info, f, indent=2)
+file_lock = threading.Lock()
+with file_lock:
+    with open(os.path.join(RUN_DIR, "optimal_threshold.json"), "w") as f:
+        json.dump(threshold_info, f, indent=2)
 print(f"Umbral guardado en: {os.path.join(RUN_DIR, 'optimal_threshold.json')}\n")
 
 
