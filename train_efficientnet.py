@@ -694,14 +694,21 @@ if 'test' in ds:
         if len(set(y_test_true)) == 2:
             # For binary, use probabilities for positive class
             if test_logits.ndim > 1 and test_logits.shape[1] == 2:
-                # Apply softmax to get probabilities
-                test_probs = F.softmax(torch.tensor(test_logits), dim=1).numpy()[:, fire_index]
+                # Check if logits are already normalized (sum close to 1)
+                row_sums = np.sum(test_logits, axis=1)
+                if np.allclose(row_sums, 1.0, atol=1e-3):
+                    print("[WARNING] test_logits rows sum to ~1. Probabilities may already be normalized. Skipping softmax.")
+                    test_probs = test_logits[:, fire_index]
+                else:
+                    # Apply softmax to get probabilities
+                    test_probs = F.softmax(torch.tensor(test_logits), dim=1).numpy()[:, fire_index]
             elif test_logits.ndim == 1:
                 # If already 1D, apply sigmoid
                 test_probs = 1 / (1 + np.exp(-test_logits))
             else:
                 test_probs = test_logits[:, fire_index]  # fallback
             test_roc_auc = roc_auc_score(y_test_true, test_probs)
+            print("USED CORRECT ROC_AUC CALCULATION FOR BINARY")
         else:
             # For multiclass, use softmax probabilities
             test_probs = F.softmax(torch.tensor(test_logits), dim=1).numpy()
