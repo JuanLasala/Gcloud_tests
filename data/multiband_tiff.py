@@ -102,7 +102,6 @@ def normalize_for_efficientnet(arr: np.ndarray) -> torch.Tensor:
     for c in IR_INDICES:
         arr[..., c] = np.log1p(np.maximum(arr[..., c], -0.999999))
 
-
     arr = (arr - GLOBAL_MEAN) / (GLOBAL_STD + 1e-6)
 
     # Safety guard against downstream metric failures caused by non-finite values.
@@ -111,5 +110,5 @@ def normalize_for_efficientnet(arr: np.ndarray) -> torch.Tensor:
     # Leave in pytorch format
     tensor = torch.from_numpy(arr).permute(2, 0, 1)
 
-    return tensor
+    return tensor.float()
 
