@@ -615,43 +615,9 @@ print(f"  - FN: {threshold_metrics['false_negatives']}, TN: {threshold_metrics['
 # -------------------------------------------------------------------------
 trainer.save_metrics("eval", metrics)
 
-# Usar exactamente las mismas predicciones threshold-based para métricas, plots y errores
-y_pred_threshold = apply_threshold(val_logits, fire_index, optimal_threshold)
-y_true = val_labels
 
-# -------------------------------------------------------------------------
-# IMÁGENES MAL CLASIFICADAS
-# -------------------------------------------------------------------------
-fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model,
-    ds['validation'],
-    output_dir=f"{RUN_DIR}/misclassified",
-    fire_index=fire_index,
-    no_fire_index=no_fire_index,
-    pred_labels=y_pred_threshold,
-    true_labels=y_true,
-    use_rgb=args.rgb,
-)
-
-create_gradcam_for_misclassified(
-    model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified", use_rgb=args.rgb
-)
-
-# -------------------------------------------------------------------------
-# PLOTS
-# -------------------------------------------------------------------------
-# Usar predicciones con umbral óptimo en lugar de argmax
-plot_confusion(y_true, y_pred_threshold, labels, RUN_DIR)
-print('confusion done')
-save_classification_report(y_true, y_pred_threshold, labels, RUN_DIR)
-print('report done')
-"""fps = inspect_fp(model, processor, ds['validation'], labels)
-print("FOUND FP:", len(fps))
-for r in fps[:10]:
-    print(r)
-"""
+# (Removed repeated threshold-based evaluation and plots on validation set)
 plot_learning_curves(trainer.state.log_history, RUN_DIR)
-print('learning curves done')
 
 # -------------------------------------------------------------------------
 # GUARDAR UMBRAL ÓPTIMO
