@@ -29,7 +29,7 @@ MODEL_NAME = "google/efficientnet-b4"
 RESULTS_BASE = "./resultados_efficientnet" #directorio para guardar resultados
 
 RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-RUN_DIR = os.path.join(RESULTS_BASE, f"efficientnet_run_{RUN_ID}")
+RUN_DIR = os.path.join(RESULTS_BASE, f"old_efficientnet_run_{RUN_ID}")
 os.makedirs(RUN_DIR, exist_ok=True)
 
 print(f"\n=== Entrenamiento EfficientNet-V2 ===")
@@ -87,7 +87,7 @@ model, processor = load_hf_model(
 )
 
 
-sample = ds["val"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
+sample = ds["validation"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
 inputs = processor(images=sample, return_tensors="pt") # procesamiento de la imagen por el processor
 print("Processor output shape:", inputs["pixel_values"].shape) 
 
@@ -116,7 +116,7 @@ def eval_transform_effnet(batch):
     return {"image": images, "label": batch["label"], "path": batch["path"]}
 ds = {
     "train": ds["train"].with_transform(train_transform_effnet),
-    "val": ds["val"].with_transform(eval_transform_effnet),
+    "validation": ds["validation"].with_transform(eval_transform_effnet),
     "test": ds["test"].with_transform(eval_transform_effnet),
 }
 # ---------------------------------------------------------------------
@@ -135,7 +135,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=ds["train"],
-    eval_dataset=ds['val'],
+    eval_dataset=ds['validation'],
     data_collator=collator,
     compute_metrics=compute_metrics,
     processing_class=processor,
