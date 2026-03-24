@@ -15,6 +15,9 @@ for arg in "$@"; do
         --resume-run-dir=*)
             RESUME_RUN_DIR="${arg#*=}"
             ;;
+        --vit)
+            USE_VIT=true
+            ;;
     esac
 done
 
@@ -153,9 +156,17 @@ echo " 5) Ejecutando entrenamiento "
 echo "=========================="
 
 #python train_vit.py
+
 RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
 
-TRAIN_CMD=(python train_efficientnet.py)
+# Default to EfficientNet, use train_vit.py if --vit is passed
+if [ "${USE_VIT:-false}" = true ]; then
+    echo "Usando Vision Transformer (ViT) para entrenamiento."
+    TRAIN_CMD=(python train_vit.py)
+else
+    echo "Usando EfficientNet para entrenamiento (por defecto)."
+    TRAIN_CMD=(python train_efficientnet.py)
+fi
 
 if [ -n "$RESUME_RUN_DIR" ]; then
     echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
