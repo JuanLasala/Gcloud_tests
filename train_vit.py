@@ -175,13 +175,14 @@ model, processor = build_vit(
     label2id=label2id
 )
 
+
 def get_image(img):
     if isinstance(img, Image.Image):
-        return img
+        return img.convert("RGB")
     if isinstance(img, dict) and "path" in img:
-        return Image.open(img["path"])
+        return Image.open(img["path"]).convert("RGB")
     if isinstance(img, str):
-        return Image.open(img)
+        return Image.open(img).convert("RGB")
     raise ValueError(f"Unsupported image type: {type(img)}")
 
 def train_transform(batch):
