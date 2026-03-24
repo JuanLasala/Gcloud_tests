@@ -8,6 +8,8 @@ from data.dataset_loader import load_imagefolder
 from data.augmentations import train_augmentations, eval_augmentations_vit
 from transformers import AutoModelForImageClassification, AutoImageProcessor
 from data.collators import ImageCollator
+from PIL import Image
+
 
 from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
@@ -172,13 +174,13 @@ model, processor = build_vit(
 )
 
 def train_transform(batch):
-    images = [train_augmentations(img) for img in batch["image"]]
+    images = [train_augmentations(img if hasattr(img, 'convert') else Image.open(img)) for img in batch["image"]]
     inputs = processor(images, return_tensors="pt")
     inputs["labels"] = batch["label"]
     return inputs
 
 def eval_transform(batch):
-    images = [eval_augmentations_vit(img) for img in batch["image"]]
+    images = [eval_augmentations_vit(img if hasattr(img, 'convert') else Image.open(img)) for img in batch["image"]]
     inputs = processor(images, return_tensors="pt")
     inputs["labels"] = batch["label"]
     return inputs
