@@ -6,7 +6,7 @@ from torchvision.transforms import InterpolationMode
 
 train_augmentations = v2.Compose([
     v2.RandomHorizontalFlip(),
-    v2.RandomResizedCrop(size=(240, 240), scale=(0.8, 1.0)), #vit 240x240, effnet 380x380
+    v2.RandomResizedCrop(size=(384, 384), scale=(0.8, 1.0)), #vit 384x384, effnet 380x380
     v2.ColorJitter(brightness=0.1, contrast=0.2, saturation=0.2, hue=0.1),
     v2.RandomRotation(degrees=15),
     v2.RandomAutocontrast(),
@@ -23,5 +23,5 @@ eval_augmentations_multiband = v2.Compose([
 ])
 
 eval_augmentations_vit = v2.Compose([
-    v2.Resize((240, 240), interpolation=InterpolationMode.BILINEAR, antialias=True),
+    v2.Resize((384, 384), interpolation=InterpolationMode.BILINEAR, antialias=True),
     ])
