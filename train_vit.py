@@ -34,8 +34,9 @@ print("labels (dataset order):", labels)
 id2label = {i: label for i, label in enumerate(labels)} # Mapeo ID a label ({0: 'Fire', 1: 'No_Fire'})
 label2id = {label: i for i, label in enumerate(labels)} # Mapeo LABEL A ID ({"Fire": 0, "No_Fire": 1})
 
-fire_index = labels.index("Fire")
-no_fire_index = labels.index("No_Fire")
+labels_lower = [l.lower() for l in labels]
+fire_index = labels_lower.index("fire")
+no_fire_index = labels_lower.index("no_fire")
 
 model, processor = build_vit(
     "google/vit-base-patch16-224-in21k",
@@ -112,8 +113,6 @@ print('Test confusion, report, and learning curves done')
 # ==========================================
 # GUARDAR IMÁGENES MAL CLASIFICADAS
 # ==========================================
-fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-
 # IMÁGENES MAL CLASIFICADAS (test set)
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
     model, processor, ds["test"], output_dir=f"{output_dir}/misclassified_test", fire_index=fire_index, no_fire_index=no_fire_index

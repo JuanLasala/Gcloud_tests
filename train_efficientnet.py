@@ -70,8 +70,8 @@ label2id = {label: i for i, label in enumerate(labels)} # mapeo label a id ({"Fi
 print("id2label:", id2label)
 print("label2id:", label2id)
 
-fire_index = labels.index("Fire")
-no_fire_index = labels.index("No_Fire")
+fire_index = labels.index("fire")
+no_fire_index = labels.index("no_fire")
 
 # ---------------------------------------------------------------------
 # CARGA DEL MODELO
