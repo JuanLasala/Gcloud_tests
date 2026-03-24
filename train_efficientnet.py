@@ -24,7 +24,8 @@ from utils.list_FP import inspect_fp
 # CONFIGURACIÓN GENERAL
 # ---------------------------------------------------------------------
 
-MODEL_NAME = "google/efficientnet-v2-s" #modelo a elegir (en este caso EfficientNet-V2-S)
+MODEL_NAME = "google/efficientnet-b4"
+#MODEL_NAME = "google/efficientnet-v2-s" #modelo a elegir (en este caso EfficientNet-V2-S)
 RESULTS_BASE = "./resultados_efficientnet" #directorio para guardar resultados
 
 RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -70,8 +71,9 @@ label2id = {label: i for i, label in enumerate(labels)} # mapeo label a id ({"Fi
 print("id2label:", id2label)
 print("label2id:", label2id)
 
-fire_index = labels.index("fire")
-no_fire_index = labels.index("no_fire")
+labels_lower = [l.lower() for l in labels]
+fire_index = labels_lower.index("fire")
+no_fire_index = labels_lower.index("no_fire")
 
 # ---------------------------------------------------------------------
 # CARGA DEL MODELO
