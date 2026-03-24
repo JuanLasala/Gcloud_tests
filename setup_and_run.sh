@@ -22,7 +22,7 @@ done
 SCRIPT_DIR=$(pwd)
 
 #Change branch
-git checkout new_norm
+git checkout viejo
 
 echo "=========================="
 echo " [NOTA] Ejecutando SETUP desde: $SCRIPT_DIR"
