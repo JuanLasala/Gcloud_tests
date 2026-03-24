@@ -1,3 +1,6 @@
+eval_augmentations_vit = v2.Compose([
+    v2.Resize((240, 240), interpolation=InterpolationMode.BILINEAR, antialias=True),
+])
 from torchvision.transforms import v2
 from torchvision import tv_tensors
 from torchvision.transforms import InterpolationMode
