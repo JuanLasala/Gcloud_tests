@@ -6,6 +6,7 @@ from datetime import datetime
 
 from data.dataset_loader import load_imagefolder
 from data.augmentations import train_augmentations, eval_augmentations_vit
+from transformers import AutoModelForImageClassification, AutoImageProcessor
 from data.collators import ImageCollator
 
 from models.vit_factory import build_vit
@@ -138,17 +139,38 @@ labels_lower = [l.lower() for l in labels]
 fire_index = labels_lower.index("fire")
 no_fire_index = labels_lower.index("no_fire")
 
-model, processor = build_vit(
+""" model, processor = build_vit(
     "google/vit-base-patch16-224-in21k",
     num_labels=len(labels), # número de clases
     id2label=id2label,
     label2id=label2id
 )
+ """
 
+def build_vit(num_labels, id2label, label2id):
+    # We use the 384 version to match your 399x399 resolution better
+    model_ckpt = "google/vit-base-patch16-384"
+    
+    processor = AutoImageProcessor.from_pretrained(model_ckpt)
+    
+    model = AutoModelForImageClassification.from_pretrained(
+        model_ckpt,
+        num_labels=num_labels,
+        id2label=id2label,
+        label2id=label2id,
+        ignore_mismatched_sizes=True 
+    )
+    
+    return model, processor
 # ==========================================
 # TRANSFORMS (SE USAN CON .WITH_TRANSFORM)
 # ==========================================
 
+model, processor = build_vit(
+    num_labels=len(labels),
+    id2label=id2label,
+    label2id=label2id
+)
 
 def train_transform(batch):
     images = [train_augmentations(img) for img in batch["image"]]
