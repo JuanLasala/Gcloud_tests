@@ -173,8 +173,15 @@ ds_transf = {
 # ==========================================
 
 
-run_name = datetime.now().strftime("vit_run_%Y-%m-%d_%H-%M-%S")
-output_dir = f"./resultados_vit/{run_name}"
+
+RESULTS_BASE = "./resultados_vit"
+RUN_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+if args.run_dir:
+    output_dir = args.run_dir
+else:
+    output_dir = os.path.join(RESULTS_BASE, f"vit_run_{RUN_ID}")
+os.makedirs(output_dir, exist_ok=True)
 
 training_args = get_training_args(output_dir)
 
@@ -185,7 +192,9 @@ trainer = Trainer(
     eval_dataset=ds_transf["val"],
     data_collator=ImageCollator(),
     compute_metrics=compute_metrics,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=8)],
+    callbacks=[EarlyStoppingCallback(
+        early_stopping_patience=8,
+        early_stopping_threshold=0.001,)]
 )
 
 # ==========================================
