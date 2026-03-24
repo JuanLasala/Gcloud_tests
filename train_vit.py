@@ -4,12 +4,12 @@ import argparse
 import torch
 from datetime import datetime
 
+from PIL import Image
+
 from data.dataset_loader import load_imagefolder
 from data.augmentations import train_augmentations, eval_augmentations_vit
 from transformers import AutoModelForImageClassification, AutoImageProcessor
 from data.collators import ImageCollator
-from PIL import Image
-
 
 from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
@@ -132,8 +132,8 @@ ds = load_imagefolder(DATA_PATH)
 # ==========================================
 labels = ds["train"].features["label"].names # nombres de las clases en el orden del dataset
 print("labels (dataset order):", labels)
-
-id2label = {i: label for i, label in enumerate(labels)} # Mapeo ID a label ({0: 'Fire', 1: 'No_Fire'})
+def train_transform(batch):
+    images = [train_augmentations(img if isinstance(img, Image.Image) else Image.open(str(img))) for img in batch["image"]]
 label2id = {label: i for i, label in enumerate(labels)} # Mapeo LABEL A ID ({"Fire": 0, "No_Fire": 1})
 
 labels_lower = [l.lower() for l in labels]
@@ -174,13 +174,13 @@ model, processor = build_vit(
 )
 
 def train_transform(batch):
-    images = [train_augmentations(img if hasattr(img, 'convert') else Image.open(img)) for img in batch["image"]]
+    images = images = [train_augmentations(img if isinstance(img, Image.Image) else Image.open(str(img))) for img in batch["image"]]
     inputs = processor(images, return_tensors="pt")
     inputs["labels"] = batch["label"]
     return inputs
 
 def eval_transform(batch):
-    images = [eval_augmentations_vit(img if hasattr(img, 'convert') else Image.open(img)) for img in batch["image"]]
+    images = [eval_augmentations_vit(img if isinstance(img, Image.Image) else Image.open(str(img))) for img in batch["image"]]
     inputs = processor(images, return_tensors="pt")
     inputs["labels"] = batch["label"]
     return inputs
