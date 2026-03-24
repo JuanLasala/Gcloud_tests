@@ -9,7 +9,6 @@ from data.augmentations import train_augmentations, eval_augmentations_vit
 from transformers import AutoModelForImageClassification, AutoImageProcessor
 from data.collators import ImageCollator
 
-from models.vit_factory import build_vit
 from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
 
