@@ -175,14 +175,23 @@ model, processor = build_vit(
     label2id=label2id
 )
 
+def get_image(img):
+    if isinstance(img, Image.Image):
+        return img
+    if isinstance(img, dict) and "path" in img:
+        return Image.open(img["path"])
+    if isinstance(img, str):
+        return Image.open(img)
+    raise ValueError(f"Unsupported image type: {type(img)}")
+
 def train_transform(batch):
-    images = images = [train_augmentations(img if isinstance(img, Image.Image) else Image.open(str(img))) for img in batch["image"]]
+    images = [train_augmentations(get_image(img)) for img in batch["image"]]
     inputs = processor(images, return_tensors="pt")
     inputs["labels"] = batch["label"]
     return inputs
 
 def eval_transform(batch):
-    images = [eval_augmentations_vit(img if isinstance(img, Image.Image) else Image.open(str(img))) for img in batch["image"]]
+    images = [eval_augmentations_vit(get_image(img)) for img in batch["image"]]
     inputs = processor(images, return_tensors="pt")
     inputs["labels"] = batch["label"]
     return inputs
