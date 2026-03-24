@@ -135,7 +135,7 @@ print("labels (dataset order):", labels)
 def train_transform(batch):
     images = [train_augmentations(img if isinstance(img, Image.Image) else Image.open(str(img))) for img in batch["image"]]
 label2id = {label: i for i, label in enumerate(labels)} # Mapeo LABEL A ID ({"Fire": 0, "No_Fire": 1})
-
+id2label = {i: label for i, label in enumerate(labels)} # mapeo id a label ({0: 'Fire', 1: 'No_Fire'})
 labels_lower = [l.lower() for l in labels]
 fire_index = labels_lower.index("fire")
 no_fire_index = labels_lower.index("no_fire")
@@ -166,6 +166,8 @@ def build_vit(num_labels, id2label, label2id):
 # ==========================================
 # TRANSFORMS (SE USAN CON .WITH_TRANSFORM)
 # ==========================================
+
+
 
 model, processor = build_vit(
     num_labels=len(labels),
