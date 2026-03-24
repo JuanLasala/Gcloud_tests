@@ -185,7 +185,7 @@ def eval_transform(batch):
 
 ds_transf = {
     "train": ds["train"].with_transform(train_transform),
-    "val": ds["val"].with_transform(eval_transform),
+    "val": ds["validation"].with_transform(eval_transform),
     "test": ds["test"].with_transform(eval_transform),
 }
 
@@ -234,7 +234,7 @@ trainer.save_metrics("eval", metrics)
 # GUARDAR IMÁGENES MAL CLASIFICADAS
 # ==========================================
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds["val"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
+    model, processor, ds["validation"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
 )
 
 create_gradcam_for_misclassified(
