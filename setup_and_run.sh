@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+
 TEST_RUN=false
 RGB_RUN=false
+VIT_RUN=false
 RESUME_RUN_DIR=""
 for arg in "$@"; do
     case "$arg" in
@@ -11,6 +13,9 @@ for arg in "$@"; do
             ;;
         --rgb)
             RGB_RUN=true
+            ;;
+        --vit)
+            VIT_RUN=true
             ;;
         --resume-run-dir=*)
             RESUME_RUN_DIR="${arg#*=}"
@@ -155,7 +160,12 @@ echo "=========================="
 #python train_vit.py
 RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
 
-TRAIN_CMD=(python train_efficientnet.py)
+
+if [ "$VIT_RUN" = true ]; then
+    TRAIN_CMD=(python train_vit.py)
+else
+    TRAIN_CMD=(python train_efficientnet.py)
+fi
 
 if [ -n "$RESUME_RUN_DIR" ]; then
     echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
@@ -182,7 +192,12 @@ fi
 "${TRAIN_CMD[@]}" 2>&1 | tee training_log.txt # muestra en terminal y guarda en archivo
 
 # Copiar log al directorio real del run (detectado desde la salida de entrenamiento)
-RUN_DIR_FROM_LOG=$(grep -oP 'Guardando resultados en:\s*\K.*' training_log.txt | tail -n1 | sed 's/[[:space:]]*$//')
+
+if [ "$VIT_RUN" = true ]; then
+    RUN_DIR_FROM_LOG=$(grep -oP 'resultados_vit/vit_run_[^[:space:]]*' training_log.txt | tail -n1 | sed 's/[[:space:]]*$//')
+else
+    RUN_DIR_FROM_LOG=$(grep -oP 'Guardando resultados en:\s*\K.*' training_log.txt | tail -n1 | sed 's/[[:space:]]*$//')
+fi
 if [ -n "${RUN_DIR_FROM_LOG:-}" ] && [ -d "$RUN_DIR_FROM_LOG" ]; then
     cp training_log.txt "$RUN_DIR_FROM_LOG/training_log.txt"
     rm -f training_log.txt
