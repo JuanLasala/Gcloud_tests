@@ -22,7 +22,7 @@ import torch.nn.functional as F
 # ==========================================
 # CARGAR DATASET
 # ==========================================
-DATA_PATH = "/home/jlasala/ViT tests"
+DATA_PATH = "/srv/train_project/Gcloud_tests/dataset_rgb"
 ds = load_imagefolder(DATA_PATH)
 
 # ==========================================
@@ -95,28 +95,32 @@ trainer.save_model()
 # EVALUAR
 # ==========================================
 metrics = trainer.evaluate(ds_transf["val"])
-trainer.save_metrics("eval", metrics)
+
+# Final evaluation on test set
+test_metrics = trainer.evaluate(ds_transf["test"])
+trainer.save_metrics("test", test_metrics)
+
+# Generate plots/reports for test set only
+test_preds = trainer.predict(ds_transf["test"])
+y_pred_test = test_preds.predictions.argmax(axis=1)
+y_true_test = test_preds.label_ids
+plot_confusion(y_true_test, y_pred_test, labels, output_dir, suffix='_test')
+save_classification_report(y_true_test, y_pred_test, labels, output_dir, suffix='_test')
+plot_learning_curves(trainer.state.log_history, output_dir)
+print('Test confusion, report, and learning curves done')
 
 # ==========================================
 # GUARDAR IMÁGENES MAL CLASIFICADAS
 # ==========================================
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds["val"], output_dir=f"{output_dir}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
-)
 
+# IMÁGENES MAL CLASIFICADAS (test set)
+fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
+    model, processor, ds["test"], output_dir=f"{output_dir}/misclassified_test", fire_index=fire_index, no_fire_index=no_fire_index
+)
 create_gradcam_for_misclassified(
-    model, processor, fp_paths, fn_paths, output_dir=f"{output_dir}/misclassified"
+    model, processor, fp_paths, fn_paths, output_dir=f"{output_dir}/misclassified_test"
 )
 
-# ==========================================
-# PLOTS
-# ==========================================
-preds = trainer.predict(ds_transf["val"])
-y_pred = preds.predictions.argmax(axis=1)
-y_true = preds.label_ids
-
-plot_confusion(y_true, y_pred, labels, output_dir)
-save_classification_report(y_true, y_pred, labels, output_dir)
-plot_learning_curves(trainer.state.log_history, output_dir)
-
+# Only use validation for early stopping/model selection, not for final plots/logs
 print("Entrenamiento completado.")

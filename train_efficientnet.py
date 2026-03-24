@@ -162,36 +162,38 @@ print(metrics)
 # -------------------------------------------------------------------------
 # EVALUACIÓN
 # -------------------------------------------------------------------------
-trainer.save_metrics("eval", metrics)
+
+# Final evaluation on test set
+print("\n=== Evaluación final en test set ===")
+test_metrics = trainer.evaluate(ds["test"])
+print(test_metrics)
+
+# Save test metrics and generate plots/reports for test set
+trainer.save_metrics("test", test_metrics)
+
+# IMÁGENES MAL CLASIFICADAS (test set)
+fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
+    model, processor, ds["test"], output_dir=f"{RUN_DIR}/misclassified_test", fire_index=fire_index, no_fire_index=no_fire_index
+)
+create_gradcam_for_misclassified(
+    model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified_test"
+)
+
+# PLOTS (test set)
+test_preds = trainer.predict(ds["test"])
+y_pred_test = test_preds.predictions.argmax(axis=1)
+y_true_test = test_preds.label_ids
+plot_confusion(y_true_test, y_pred_test, labels, RUN_DIR, suffix='_test')
+save_classification_report(y_true_test, y_pred_test, labels, RUN_DIR, suffix='_test')
+plot_learning_curves(trainer.state.log_history, RUN_DIR)
+print('Test confusion, report, and learning curves done')
+
 
 # -------------------------------------------------------------------------
 # IMÁGENES MAL CLASIFICADAS
 # -------------------------------------------------------------------------
-fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
-    model, processor, ds["val"], output_dir=f"{RUN_DIR}/misclassified", fire_index=fire_index, no_fire_index=no_fire_index
-)
 
-create_gradcam_for_misclassified(
-    model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified"
-)
-
-# -------------------------------------------------------------------------
-# PLOTS
-# -------------------------------------------------------------------------
-preds = trainer.predict(ds["val"])
-y_pred = preds.predictions.argmax(axis=1)
-y_true = preds.label_ids
-plot_confusion(y_true, y_pred, labels, RUN_DIR)
-print('confusion done')
-save_classification_report(y_true, y_pred, labels, RUN_DIR)
-print('report done')
-"""fps = inspect_fp(model, processor, ds["val"], labels)
-print("FOUND FP:", len(fps))
-for r in fps[:10]:
-    print(r)
-"""
-plot_learning_curves(trainer.state.log_history, RUN_DIR)
-print('learning curves done')
+# Only use validation for early stopping/model selection, not for final plots/logs
 training_end = datetime.now()
 training_duration = training_end - train_start
 total_seconds = int(training_duration.total_seconds())

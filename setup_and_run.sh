@@ -1,39 +1,28 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# CLI flags
 TEST_RUN=false
-
-usage() {
-    cat <<EOF
-Usage: $0 [options]
-
-Options:
-  --test-run   Ejecuta la pipeline en modo prueba (dataset reducido)
-  -h, --help   Muestra esta ayuda
-EOF
-}
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
+RGB_RUN=false
+RESUME_RUN_DIR=""
+for arg in "$@"; do
+    case "$arg" in
         --test-run)
             TEST_RUN=true
-            shift
             ;;
-        -h|--help)
-            usage
-            exit 0
+        --rgb)
+            RGB_RUN=true
             ;;
-        *)
-            echo "[ERROR] Argumento no reconocido: $1"
-            usage
-            exit 1
+        --resume-run-dir=*)
+            RESUME_RUN_DIR="${arg#*=}"
             ;;
     esac
 done
 
 # Define el directorio del script (donde se copiarán los datos)
 SCRIPT_DIR=$(pwd)
+
+#Change branch
+git checkout new_norm
 
 echo "=========================="
 echo " [NOTA] Ejecutando SETUP desde: $SCRIPT_DIR"
@@ -53,34 +42,55 @@ sudo apt update -y && sudo apt upgrade -y
 sudo apt install -y wget git unzip # Dependencias básicas
 
 # --------------------------------------------------------------------------
-# Bloque 2: Configuración del Entorno Conda (Optimizado para no reinstalar)
+# Bloque 2: Configuración del Entorno pyenv (Optimizado para no reinstalar)
 # --------------------------------------------------------------------------
 
-CONDA_PATH="$HOME/miniconda"
-ENV_NAME="vit_env"
+PYENV_ROOT="$HOME/.pyenv"
+PYTHON_VERSION="3.11.8"
+#ENV_DIR="$HOME/.venvs/train-env"
+ENV_DIR="/home/fperdomo/.venvs/train-env" # ruta absoluta para evitar problemas con pyenv
 
 echo "=========================="
-echo " 2) Instalando/Reinstalando Miniconda y Entorno"
+echo " 2) Instalando pyenv y entorno virtual"
 echo "=========================="
 
-# 2a. Reinstalar Miniconda si no existe (o si la instalación es vieja)
-if [ ! -d "$CONDA_PATH" ]; then
-    echo "Instalando Miniconda..."
-    cd /tmp
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    bash miniconda.sh -b -p $CONDA_PATH
-    rm miniconda.sh
+# 2a. Install build dependencies (Ubuntu/Debian)
+sudo apt update
+sudo apt install -y make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev curl git \
+    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+    libffi-dev liblzma-dev
+
+# 2b. Install pyenv if missing
+if [ ! -d "$PYENV_ROOT" ]; then
+    echo "Instalando pyenv..."
+    git clone https://github.com/pyenv/pyenv.git $PYENV_ROOT
 fi
 
-# 2b. Inicializar y Activar Conda (necesario en cada ejecución de script)
-eval "$($CONDA_PATH/bin/conda shell.bash hook)"
-conda activate $ENV_NAME || { 
-    echo "Creando entorno Conda nuevo: $ENV_NAME"
-    conda create -y -n $ENV_NAME python=3.10
-    conda activate $ENV_NAME
-}
+# 2c. Initialize pyenv
+export PYENV_ROOT="$PYENV_ROOT"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
+# 2d. Install Python version if missing
+if ! pyenv versions --bare | grep -q "$PYTHON_VERSION"; then
+    pyenv install $PYTHON_VERSION
+fi
 
+# 2e. Set local python version for this session
+pyenv shell $PYTHON_VERSION
+
+# 2f. Create virtual environment if missing
+if [ ! -d "$ENV_DIR" ]; then
+    echo "Creando entorno virtual en $ENV_DIR"
+    python -m venv $ENV_DIR
+fi
+
+# 2g. Activate environment
+source $ENV_DIR/bin/activate
+
+echo "Entorno activado con Python:"
+python --version
 # --------------------------------------------------------------------------
 # Bloque 3: Instalación de Dependencias (Optimizado)
 # --------------------------------------------------------------------------
@@ -88,16 +98,20 @@ conda activate $ENV_NAME || {
 echo "=========================="
 echo " 3) Instalando dependencias (solo si es necesario) "
 echo "=========================="
-# Usamos un archivo 'sentinel' para saber si ya instalamos las dependencias
-SENTINEL_FILE="$SCRIPT_DIR/.dependencies_installed"
 
-if [ ! -f "$SENTINEL_FILE" ]; then
-    echo "Instalando PyTorch, HuggingFace y utilidades..."
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-    pip install transformers datasets evaluate pillow matplotlib scikit-learn
-    touch "$SENTINEL_FILE" # Crea el archivo sentinel
+# INSTALAR DEPENDENCIAS
+echo "Entorno activado con Python:"
+python --version
+
+# 2h. Upgrade pip (recommended)
+pip install --upgrade pip
+
+# 2i. Install requirements if file exists
+if [ -f "requirements.txt" ]; then
+    echo "Instalando dependencias desde requirements.txt..."
+    pip install -r requirements.txt
 else
-    echo "Dependencias ya instaladas (archivo sentinel encontrado)."
+    echo "No se encontró requirements.txt"
 fi
 
 # --------------------------------------------------------------------------
@@ -111,19 +125,24 @@ echo "=========================="
 # Usamos gsutil rsync, que es idempotente: solo copia los archivos nuevos/modificados.
 # Como el dataset es estático, la primera vez lo copia todo, las siguientes veces no hace nada.
 
-DATASET_DIR="$SCRIPT_DIR/dataset_rgb"
-
-# Check if required dataset folders exist inside dataset_rgb
-if [ -d "$DATASET_DIR/train" ] && [ -d "$DATASET_DIR/test" ] && [ -d "$DATASET_DIR/validation" ]; then
-    echo "Dataset already present in $DATASET_DIR (train, test, validation found). Skipping download."
+if [ "$RGB_RUN" = true ]; then
+    DATASET_DIR="$SCRIPT_DIR/dataset_rgb"
+    DATASET_BUCKET="gs://new_rgb_dataset/dataset"
 else
-    echo "Dataset not found in $DATASET_DIR. Downloading from GCS..."
-    #gsutil -m rsync -r gs://fire_model_dataset/ .
-    #gsutil -m rsync -r gs://fire_dataset_2/ .
-    gsutil -m rsync -r gs://new_rgb_dataset/dataset "$DATASET_DIR"
+    DATASET_DIR="$SCRIPT_DIR/dataset"
+    DATASET_BUCKET="gs://bucket_six_bands/dataset"
 fi
 
-echo "Dataset copiado a: $SCRIPT_DIR"
+# Check if required dataset folders exist
+if [ -d "$DATASET_DIR/train" ] && [ -d "$DATASET_DIR/test" ] && [ -d "$DATASET_DIR/validation" ]; then
+    echo "Dataset already present (train, test, val found). Skipping download."
+else
+    echo "Dataset not found. Downloading from GCS..."
+    #gsutil -m rsync -r gs://fire_model_dataset/ "$DATASET_DIR"
+    gsutil -m rsync -r "$DATASET_BUCKET" "$DATASET_DIR"
+fi
+
+echo "Dataset copiado a: $DATASET_DIR"
 
 # --------------------------------------------------------------------------
 # Bloque 5: Ejecución
@@ -136,7 +155,7 @@ echo "=========================="
 #python train_vit.py
 RESUME_TOTAL_EPOCHS="${RESUME_TOTAL_EPOCHS:-20}"
 
-TRAIN_CMD=(python -u train_efficientnet.py)
+TRAIN_CMD=(python train_efficientnet.py)
 
 if [ -n "$RESUME_RUN_DIR" ]; then
     echo "Reanudando run específico: $RESUME_RUN_DIR (hasta ${RESUME_TOTAL_EPOCHS} epochs totales)"
@@ -149,23 +168,63 @@ if [ "$TEST_RUN" = true ]; then
     echo "Modo test-run activado: usando subconjunto reducido del dataset"
     TRAIN_CMD+=(--test-run)
 fi
+
+if [ "$RGB_RUN" = true ]; then
+    echo "Modo RGB activado: entrenamiento con modelo/dataset RGB (3 canales)"
+    TRAIN_CMD+=(--rgb)
+fi
+
+if [ -f training_log.txt ]; then
+    echo "Eliminando training_log.txt previo en $SCRIPT_DIR"
+    rm -f training_log.txt
+fi
+
 "${TRAIN_CMD[@]}" 2>&1 | tee training_log.txt # muestra en terminal y guarda en archivo
 
 # Copiar log al directorio real del run (detectado desde la salida de entrenamiento)
 RUN_DIR_FROM_LOG=$(grep -oP 'Guardando resultados en:\s*\K.*' training_log.txt | tail -n1 | sed 's/[[:space:]]*$//')
 if [ -n "${RUN_DIR_FROM_LOG:-}" ] && [ -d "$RUN_DIR_FROM_LOG" ]; then
     cp training_log.txt "$RUN_DIR_FROM_LOG/training_log.txt"
+    rm -f training_log.txt
     echo "Log copiado a: $RUN_DIR_FROM_LOG/training_log.txt"
 else
     echo "[WARN] No se pudo detectar un run_dir válido desde training_log.txt; log quedó en $SCRIPT_DIR/training_log.txt"
 fi
 
-#python train_vit.py
-python train_efficientnet.py
-
-
 echo "=========================="
 echo " Entrenamiento finalizado "
 echo "=========================="
 
-sudo shutdown -h now
+# --- Enviar training_log.txt por correo antes de apagar ---
+EMAIL="incendiosforestalesuy@gmail.com"
+SUBJECT="Entrenamiento finalizado: training_log.txt"
+BODY="Adjunto el log de entrenamiento."
+
+# Determinar ubicación del log
+LOG_PATH=""
+if [ -n "${RUN_DIR_FROM_LOG:-}" ] && [ -f "$RUN_DIR_FROM_LOG/training_log.txt" ]; then
+    LOG_PATH="$RUN_DIR_FROM_LOG/training_log.txt"
+elif [ -f "$SCRIPT_DIR/training_log.txt" ]; then
+    LOG_PATH="$SCRIPT_DIR/training_log.txt"
+fi
+
+if [ -n "$LOG_PATH" ]; then
+    echo "Enviando $LOG_PATH a $EMAIL..."
+    if command -v mailx >/dev/null 2>&1; then
+        echo "$BODY" | mailx -s "$SUBJECT" -a "$LOG_PATH" "$EMAIL"
+    elif command -v mutt >/dev/null 2>&1; then
+        echo "$BODY" | mutt -s "$SUBJECT" -a "$LOG_PATH" -- "$EMAIL"
+    else
+        echo "[ERROR] No se encontró mailx ni mutt para enviar el correo."
+    fi
+else
+    echo "[WARN] No se encontró training_log.txt para enviar por correo."
+fi
+
+# Apagar solo si NO es test-run
+if [ "$TEST_RUN" = false ]; then
+    #sudo shutdown -h now
+    echo "Would have turned off, but that is disabled for now"
+else
+    echo "[INFO] Test-run: no se apaga el sistema."
+fi
