@@ -4,6 +4,7 @@ from datetime import datetime
 import argparse
 from data.dataset_loader import load_imagefolder
 from data.augmentations import train_augmentations
+from transformers import AutoModelForImageClassification, AutoImageProcessor
 from data.collators import ImageCollator
 
 
@@ -63,8 +64,27 @@ labels_lower = [l.lower() for l in labels]
 fire_index = labels_lower.index("fire")
 no_fire_index = labels_lower.index("no_fire")
 
+
+def build_vit(name, num_labels, id2label, label2id):
+    # We use the 384 version to match your 399x399 resolution better
+    model_ckpt = "google/vit-base-patch16-384"
+    
+    processor = AutoImageProcessor.from_pretrained(model_ckpt)
+    
+    model = AutoModelForImageClassification.from_pretrained(
+        model_ckpt,
+        num_labels=num_labels,
+        id2label=id2label,
+        label2id=label2id,
+        ignore_mismatched_sizes=True 
+    )
+    
+    return model, processor
+
+# old model: "google/vit-base-patch16-224-in21k"
+"google/vit-base-patch16-384"
 model, processor = build_vit(
-    "google/vit-base-patch16-224-in21k",
+    "google/vit-base-patch16-384",
     num_labels=len(labels), # número de clases
     id2label=id2label,
     label2id=label2id
