@@ -7,7 +7,6 @@ from data.augmentations import train_augmentations
 from data.collators import ImageCollator
 
 
-from models.vit_factory import build_vit
 from training.metrics import compute_metrics
 from training.trainer_args import get_training_args
 
