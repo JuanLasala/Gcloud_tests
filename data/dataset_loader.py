@@ -13,6 +13,6 @@ def load_imagefolder(path):
     # Return the modified dataset as a DatasetDict
     return DatasetDict({
         "train": ds_full["train"],
-        "val": ds_full["validation"],
+        "validation": ds_full["validation"],
         "test": ds_full["test"]
     })
