@@ -117,7 +117,7 @@ ds_transf = {
 
 
 run_name = datetime.now().strftime("vit_run_%Y-%m-%d_%H-%M-%S")
-output_dir = f"./resultados_vit/{run_name}"
+output_dir = f"./old_resultados_vit/{run_name}"
 
 training_args = get_training_args(output_dir)
 
@@ -125,7 +125,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=ds_transf["train"],
-    eval_dataset=ds_transf["val"],
+    eval_dataset=ds_transf["validation"],
     data_collator=ImageCollator(),
     compute_metrics=compute_metrics,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=8)],
@@ -140,7 +140,7 @@ trainer.save_model()
 # ==========================================
 # EVALUAR
 # ==========================================
-metrics = trainer.evaluate(ds_transf["val"])
+metrics = trainer.evaluate(ds_transf["validation"])
 
 # Final evaluation on test set
 test_metrics = trainer.evaluate(ds_transf["test"])
