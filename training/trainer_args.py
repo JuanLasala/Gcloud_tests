@@ -1,6 +1,6 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-5, epochs=5):
+def get_training_args(output_dir, lr=3e-4, epochs=5):
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=16,
@@ -14,7 +14,7 @@ def get_training_args(output_dir, lr=3e-5, epochs=5):
         learning_rate=lr,
         remove_unused_columns=False,
         load_best_model_at_end=True,
-        metric_for_best_model="accuracy",
+        metric_for_best_model="f1",
         greater_is_better=True,
         #label_smoothing_factor=0.1,
     )
