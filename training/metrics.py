@@ -7,6 +7,8 @@ precision = evaluate.load("precision")
 recall = evaluate.load("recall")
 f1 = evaluate.load("f1")
 
+POS_LABEL = 0  # Set the positive class label (integer)
+
 def compute_metrics(eval_pred):
     logits, labels = eval_pred  # Unpack logits and labels
     preds = np.argmax(logits, axis=1)  # Convert logits to predictions by taking the argmax along axis 1
@@ -16,9 +18,9 @@ def compute_metrics(eval_pred):
 
     metrics = {
         "accuracy": accuracy.compute(predictions=preds, references=labels)["accuracy"],
-        "precision": precision.compute(predictions=preds, references=labels, average="binary", pos_label="fire")["precision"],
-        "recall": recall.compute(predictions=preds, references=labels, average="binary", pos_label="fire")["recall"],
-        "f1": f1.compute(predictions=preds, references=labels, average="binary", pos_label="fire")["f1"],
+        "precision": precision.compute(predictions=preds, references=labels, average="binary", pos_label=POS_LABEL)["precision"],
+        "recall": recall.compute(predictions=preds, references=labels, average="binary", pos_label=POS_LABEL)["recall"],
+        "f1": f1.compute(predictions=preds, references=labels, average="binary", pos_label=POS_LABEL)["f1"],
     }
     # ROC AUC (handle binary and multiclass)
     try:
