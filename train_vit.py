@@ -127,6 +127,19 @@ else:
 
 ds = load_imagefolder(DATA_PATH)
 
+
+# =================================================================
+# PRUEBA RÁPIDA CON DATASET REDUCIDO
+# =================================================================
+if args.test_run and ds is not None:
+    NUM_SAMPLES = 100
+    NUM_VAL_SAMPLES = 20
+    print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train y {NUM_VAL_SAMPLES} val !!!")
+
+    # Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
+    ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
+    ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
+    ds['test'] = ds['test'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
 # ==========================================
 # CREAR MODELO VIT + PROCESSOR
 # ==========================================

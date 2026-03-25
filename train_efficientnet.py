@@ -422,6 +422,7 @@ if args.test_run and ds is not None:
     # Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
     ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
     ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
+    ds['test'] = ds['test'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
 
 
 # ---------------------------------------------------------------------
