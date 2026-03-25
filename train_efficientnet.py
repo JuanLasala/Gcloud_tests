@@ -87,7 +87,7 @@ model, processor = load_hf_model(
 )
 
 
-sample = ds["validation"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
+sample = ds["val"][0]["image"].convert("RGB") #toma la primera imagen del dataset de validación y la convierte a RGB
 inputs = processor(images=sample, return_tensors="pt") # procesamiento de la imagen por el processor
 print("Processor output shape:", inputs["pixel_values"].shape) 
 
@@ -116,7 +116,7 @@ def eval_transform_effnet(batch):
     return {"image": images, "label": batch["label"], "path": batch["path"]}
 ds = {
     "train": ds["train"].with_transform(train_transform_effnet),
-    "validation": ds["validation"].with_transform(eval_transform_effnet),
+    "validation": ds["val"].with_transform(eval_transform_effnet),
     "test": ds["test"].with_transform(eval_transform_effnet),
 }
 # ---------------------------------------------------------------------
