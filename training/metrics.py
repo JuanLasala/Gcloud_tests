@@ -1,5 +1,6 @@
 import evaluate
 import numpy as np
+from sklearn.metrics import roc_auc_score
 
 accuracy = evaluate.load("accuracy")
 precision = evaluate.load("precision")
@@ -7,12 +8,25 @@ recall = evaluate.load("recall")
 f1 = evaluate.load("f1")
 
 def compute_metrics(eval_pred):
-    logits, labels = eval_pred # Unpack logits and labels
-    preds = np.argmax(logits, axis=1) # Convert logits to predictions by taking the argmax along axis 1
-    # Compute metrics and return as a dictionary
-    return {
+    logits, labels = eval_pred  # Unpack logits and labels
+    preds = np.argmax(logits, axis=1)  # Convert logits to predictions by taking the argmax along axis 1
+    # Softmax to get probabilities
+    exp_logits = np.exp(logits - np.max(logits, axis=1, keepdims=True))
+    probs = exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
+
+    metrics = {
         "accuracy": accuracy.compute(predictions=preds, references=labels)["accuracy"],
-        "precision": precision.compute(predictions=preds, references=labels, average="weighted")["precision"],
-        "recall": recall.compute(predictions=preds, references=labels, average="weighted")["recall"],
-        "f1": f1.compute(predictions=preds, references=labels, average="weighted")["f1"],
+        "precision": precision.compute(predictions=preds, references=labels, average="binary", pos_label="fire")["precision"],
+        "recall": recall.compute(predictions=preds, references=labels, average="binary", pos_label="fire")["recall"],
+        "f1": f1.compute(predictions=preds, references=labels, average="binary", pos_label="fire")["f1"],
     }
+    # ROC AUC (handle binary and multiclass)
+    try:
+        if probs.shape[1] == 2:
+            auc = roc_auc_score(labels, probs[:, 1])
+        else:
+            auc = roc_auc_score(labels, probs, multi_class="ovr")
+        metrics["roc_auc"] = auc
+    except Exception:
+        metrics["roc_auc"] = float('nan')
+    return metrics
