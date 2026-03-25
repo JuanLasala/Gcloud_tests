@@ -1,10 +1,11 @@
 import os
 import torch
 from datetime import datetime
-
+import argparse
 from data.dataset_loader import load_imagefolder
 from data.augmentations import train_augmentations
 from data.collators import ImageCollator
+
 
 from models.vit_factory import build_vit
 from training.metrics import compute_metrics
@@ -19,10 +20,35 @@ from transformers import Trainer, EarlyStoppingCallback
 import torch.nn.functional as F
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train ViT with optional checkpoint resume.")
+    resume_group = parser.add_mutually_exclusive_group()
+    resume_group.add_argument
+
+    parser.add_argument(
+            "--test-run",
+            action="store_true",
+            help="Run a quick test with reduced train/validation subsets.",
+        )
+    parser.add_argument(
+        "--rgb",
+        action="store_true",
+        help="Use RGB mode (3 channels) instead of multiband mode.",
+    )
+    return parser.parse_args()
+
+args = parse_args()
 # ==========================================
 # CARGAR DATASET
 # ==========================================
-DATA_PATH = "/srv/train_project/Gcloud_tests/dataset_rgb"
+if args.rgb:
+    DATA_PATH = "/srv/train_project/Gcloud_tests/dataset_rgb"
+    TARGET_CHANNELS = 3
+else:
+    DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
+    TARGET_CHANNELS = 6
+
+
 ds = load_imagefolder(DATA_PATH)
 
 # ==========================================

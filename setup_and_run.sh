@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-
+USE_VIT=false
 TEST_RUN=false
 RGB_RUN=false
 RESUME_RUN_DIR=""

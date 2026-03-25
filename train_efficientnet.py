@@ -6,6 +6,7 @@ from transformers import TrainingArguments, Trainer
 from torchvision import transforms
 from collections import Counter
 from transformers import EarlyStoppingCallback
+import argparse
 
 # --- módulos propios ---
 from models.model_loader import load_hf_model
@@ -23,6 +24,31 @@ from utils.list_FP import inspect_fp
 # ---------------------------------------------------------------------
 # CONFIGURACIÓN GENERAL
 # ---------------------------------------------------------------------
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train ViT with optional checkpoint resume.")
+    resume_group = parser.add_mutually_exclusive_group()
+    resume_group.add_argument
+
+    parser.add_argument(
+            "--test-run",
+            action="store_true",
+            help="Run a quick test with reduced train/validation subsets.",
+        )
+    parser.add_argument(
+        "--rgb",
+        action="store_true",
+        help="Use RGB mode (3 channels) instead of multiband mode.",
+    )
+    return parser.parse_args()
+
+args = parse_args()
+
+if args.rgb:
+    DATA_PATH = "/srv/train_project/Gcloud_tests/dataset_rgb"
+    TARGET_CHANNELS = 3
+else:
+    DATA_PATH = "/srv/train_project/Gcloud_tests/dataset"
+    TARGET_CHANNELS = 6
 
 MODEL_NAME = "google/efficientnet-b4"
 #MODEL_NAME = "google/efficientnet-v2-s" #modelo a elegir (en este caso EfficientNet-V2-S)
@@ -46,18 +72,19 @@ DATA_PATH = "/srv/train_project/Gcloud_tests/dataset_rgb"
 
 ds = load_imagefolder(DATA_PATH)
 
-"""
+
 # =================================================================
 # PRUEBA RÁPIDA CON DATASET REDUCIDO
 # =================================================================
-NUM_SAMPLES = 100
-NUM_VAL_SAMPLES = 20
-print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train y {NUM_VAL_SAMPLES} val !!!")
+if args.test_run and ds is not None:
+    NUM_SAMPLES = 100
+    NUM_VAL_SAMPLES = 20
+    print(f"!!! EJECUTANDO PRUEBA RÁPIDA: Reduciendo datasets a {NUM_SAMPLES} train y {NUM_VAL_SAMPLES} val !!!")
 
-# Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
-ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
-ds["val"] = ds["val"].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
-"""
+    # Crear subconjuntos pequeños (aseguramos que sea aleatorio y reproducible con shuffle)
+    ds["train"] = ds["train"].shuffle(seed=42).select(range(NUM_SAMPLES))
+    ds['validation'] = ds['validation'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
+    ds['test'] = ds['test'].shuffle(seed=42).select(range(NUM_VAL_SAMPLES))
 
 # ---------------------------------------------------------------------
 # MAPEOS DE CLASES
