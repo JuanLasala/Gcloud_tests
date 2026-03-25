@@ -212,8 +212,8 @@ fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
 test_preds = trainer.predict(ds["test"])
 y_pred_test = test_preds.predictions.argmax(axis=1)
 y_true_test = test_preds.label_ids
-plot_confusion(y_true_test, y_pred_test, labels, RUN_DIR, suffix='_test')
-save_classification_report(y_true_test, y_pred_test, labels, RUN_DIR, suffix='_test')
+plot_confusion(y_true_test, y_pred_test, labels, RUN_DIR)
+save_classification_report(y_true_test, y_pred_test, labels, RUN_DIR)
 plot_learning_curves(trainer.state.log_history, RUN_DIR)
 print('Test confusion, report, and learning curves done')
 

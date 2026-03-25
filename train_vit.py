@@ -131,8 +131,8 @@ trainer.save_metrics("test", test_metrics)
 test_preds = trainer.predict(ds_transf["test"])
 y_pred_test = test_preds.predictions.argmax(axis=1)
 y_true_test = test_preds.label_ids
-plot_confusion(y_true_test, y_pred_test, labels, output_dir, suffix='_test')
-save_classification_report(y_true_test, y_pred_test, labels, output_dir, suffix='_test')
+plot_confusion(y_true_test, y_pred_test, labels, output_dir)
+save_classification_report(y_true_test, y_pred_test, labels, output_dir)
 plot_learning_curves(trainer.state.log_history, output_dir)
 print('Test confusion, report, and learning curves done')
 
