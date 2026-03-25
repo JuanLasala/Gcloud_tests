@@ -88,7 +88,7 @@ def eval_transform(batch):
 
 ds_transf = {
     "train": ds["train"].with_transform(train_transform),
-    "val": ds["val"].with_transform(eval_transform),
+    "validation": ds["validation"].with_transform(eval_transform),
     "test": ds["test"].with_transform(eval_transform),
 }
 
