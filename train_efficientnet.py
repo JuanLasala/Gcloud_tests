@@ -204,9 +204,9 @@ trainer.save_metrics("test", test_metrics)
 fp_count, fn_count, fp_paths, fn_paths = save_misclassified_images(
     model, processor, ds["test"], output_dir=f"{RUN_DIR}/misclassified_test", fire_index=fire_index, no_fire_index=no_fire_index
 )
-create_gradcam_for_misclassified(
-    model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified_test"
-)
+#create_gradcam_for_misclassified(
+ #   model, processor, fp_paths, fn_paths, output_dir=f"{RUN_DIR}/misclassified_test"
+#)
 
 # PLOTS (test set)
 test_preds = trainer.predict(ds["test"])
