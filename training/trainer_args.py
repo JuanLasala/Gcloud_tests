@@ -16,7 +16,7 @@ def get_training_args(output_dir, lr=2e-4, epochs=25): #3e-5, 25 epochs
         lr_scheduler_type = "cosine",
         remove_unused_columns=False,
         load_best_model_at_end=True,
-        metric_for_best_model="f1", #F1 O ROC_AUC?
+        metric_for_best_model="roc_auc", #F1 O ROC_AUC?
         greater_is_better=True,
         label_names=["labels"],
         dataloader_num_workers=4, # added in last commit
