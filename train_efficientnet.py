@@ -7,6 +7,7 @@ from torchvision import transforms
 from collections import Counter
 from transformers import EarlyStoppingCallback
 import argparse
+import json
 
 # --- módulos propios ---
 from models.model_loader import load_hf_model
@@ -154,6 +155,9 @@ training_args = get_training_args(
     output_dir=RUN_DIR
 )
 
+STOPPING_PATIENCE = 8
+STOPPING_THRESHOLD = 0.001
+
 # ---------------------------------------------------------------------
 # TRAINER
 # ---------------------------------------------------------------------
@@ -167,13 +171,22 @@ trainer = Trainer(
     compute_metrics=compute_metrics,
     processing_class=processor,
     callbacks=[EarlyStoppingCallback(
-        early_stopping_patience=8,
-        early_stopping_threshold=0.001,)]
+        early_stopping_patience=STOPPING_PATIENCE,
+        early_stopping_threshold=STOPPING_THRESHOLD,)]
 )
+
+
 # ---------------------------------------------------------------------
 # ENTRENAMIENTO
 # ---------------------------------------------------------------------
 print("\n=== Iniciando entrenamiento ===")
+
+# Save training_args, STOPPING_PATIENCE, and STOPPING_THRESHOLD to JSON before training
+training_config = training_args.to_dict()
+training_config["STOPPING_PATIENCE"] = STOPPING_PATIENCE
+training_config["STOPPING_THRESHOLD"] = STOPPING_THRESHOLD
+with open(os.path.join(RUN_DIR, "training_config.json"), "w") as f:
+    json.dump(training_config, f, indent=2)
 
 #PATH_TO_RESUME = "./resultados_efficientnet/efficientnet_run_2025-12-09_19-51-14"
 #train_output = trainer.train(resume_from_checkpoint=PATH_TO_RESUME)

@@ -6,6 +6,7 @@ from data.dataset_loader import load_imagefolder
 from data.augmentations import train_augmentations
 from transformers import AutoModelForImageClassification, AutoImageProcessor
 from data.collators import ImageCollator
+import json
 
 
 from training.metrics import compute_metrics
@@ -115,11 +116,19 @@ ds_transf = {
 # TRAINER
 # ==========================================
 
-
 run_name = datetime.now().strftime("vit_run_%Y-%m-%d_%H-%M-%S")
 output_dir = f"./old_resultados_vit/{run_name}"
 
 training_args = get_training_args(output_dir)
+STOPPING_PATIENCE = 8
+STOPPING_THRESHOLD = 0.001
+
+# Save training_args, STOPPING_PATIENCE, and STOPPING_THRESHOLD to JSON before training
+training_config = training_args.to_dict()
+training_config["STOPPING_PATIENCE"] = STOPPING_PATIENCE
+training_config["STOPPING_THRESHOLD"] = STOPPING_THRESHOLD
+with open(os.path.join(output_dir, "training_config.json"), "w") as f:
+    json.dump(training_config, f, indent=2)
 
 trainer = Trainer(
     model=model,
@@ -128,7 +137,9 @@ trainer = Trainer(
     eval_dataset=ds_transf["validation"],
     data_collator=ImageCollator(),
     compute_metrics=compute_metrics,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=8)],
+    callbacks=[EarlyStoppingCallback(
+        early_stopping_patience=STOPPING_PATIENCE,
+        early_stopping_threshold=STOPPING_THRESHOLD,)],
 )
 
 # ==========================================
