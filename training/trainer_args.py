@@ -1,6 +1,6 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-5, epochs=1): #20
+def get_training_args(output_dir, lr=3e-5, epochs=20): #20
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=16,
