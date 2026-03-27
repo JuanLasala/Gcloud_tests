@@ -119,6 +119,9 @@ ds_transf = {
 run_name = datetime.now().strftime("vit_run_%Y-%m-%d_%H-%M-%S")
 output_dir = f"./old_resultados_vit/{run_name}"
 
+# Ensure output_dir exists before saving config
+os.makedirs(output_dir, exist_ok=True)
+
 training_args = get_training_args(output_dir)
 STOPPING_PATIENCE = 8
 STOPPING_THRESHOLD = 0.001
