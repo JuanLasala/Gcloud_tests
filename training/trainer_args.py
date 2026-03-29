@@ -1,9 +1,9 @@
 from transformers import TrainingArguments
 
-def get_training_args(output_dir, lr=3e-4, epochs=25): #3e-5, 25 epochs
+def get_training_args(output_dir, lr=2e-4, epochs=25): #3e-5, 25 epochs
     return TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=32,
+        per_device_train_batch_size=16,
         fp16=True,
         bf16=False,
         eval_strategy="epoch", # val is being used
